@@ -1,0 +1,28 @@
+<!doctype html><html><head><meta charset="utf-8"><title>PDF QA</title>
+<style>body{margin:0;background:#3a3a3a;font:13px system-ui;color:#eee}
+.pg{margin:10px auto;display:block;box-shadow:0 2px 14px #0008;background:#fff}
+.lbl{max-width:1100px;margin:16px auto 2px;font-weight:700;color:#ffd479}
+#status{position:fixed;top:0;left:0;right:0;background:#000d;padding:6px 12px;z-index:9}
+#out{padding-top:28px}</style></head><body>
+<div id="status">loading...</div><div id="out"></div>
+<script type="module">
+const st=document.getElementById('status'), out=document.getElementById('out');
+try{
+  const pdfjs=await import('./node_modules/pdfjs-dist/build/pdf.mjs');
+  pdfjs.GlobalWorkerOptions.workerSrc='./node_modules/pdfjs-dist/build/pdf.worker.mjs';
+  const cfg=await (await fetch('./qa.json?t='+Date.now())).json();
+  const buf=await (await fetch('./'+cfg.file+'?t='+Date.now())).arrayBuffer();
+  const doc=await pdfjs.getDocument({data:new Uint8Array(buf)}).promise;
+  const pages=(cfg.pages&&cfg.pages.length)?cfg.pages:[...Array(doc.numPages).keys()].map(i=>i+1);
+  for(const n of pages){
+    if(n<1||n>doc.numPages) continue;
+    const page=await doc.getPage(n), vp=page.getViewport({scale:cfg.scale||1});
+    const lbl=document.createElement('div'); lbl.className='lbl'; lbl.textContent=`page ${n} / ${doc.numPages}`;
+    const c=document.createElement('canvas'); c.className='pg';
+    c.width=vp.width; c.height=vp.height; c.style.width=vp.width+'px';
+    out.append(lbl,c);
+    await page.render({canvasContext:c.getContext('2d'),viewport:vp}).promise;
+  }
+  st.textContent=`${cfg.file} — ${pages.length} of ${doc.numPages} pages @ ${cfg.scale}`;
+}catch(e){st.textContent='ERROR: '+(e&&e.message?e.message:e);}
+</script></body></html>

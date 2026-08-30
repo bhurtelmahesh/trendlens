@@ -1,0 +1,19 @@
+{
+  "name": "trendlens-guide",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Generator for the Smart Money Concepts tutorial served at /guide.html. Deliberately outside the npm workspaces: the app builds from the committed output in app/public and never needs these dependencies.",
+  "scripts": {
+    "data": "node btcdata.js",
+    "svg": "node mksvg.js",
+    "pdf": "node build.js",
+    "page": "node page.js && node page.js --hosted",
+    "build": "npm run svg && npm run pdf && npm run page"
+  },
+  "dependencies": {
+    "pdfkit": "^0.20.2"
+  },
+  "devDependencies": {
+    "pdfjs-dist": "^4.0.0"
+  }
+}

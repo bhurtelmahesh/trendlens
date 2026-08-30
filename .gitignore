@@ -9,3 +9,10 @@ worker/dist/
 *.tsbuildinfo
 
 .firebase/
+
+# Guide generator: deps and intermediates. The built guide is committed under
+# app/public, so the app builds without ever installing these.
+guide/node_modules/
+guide/dist/
+guide/diagrams.json
+guide/walkthrough.json
