@@ -7,8 +7,9 @@ export function Legal() {
     <footer className="footer">
       <span>TrendLens &mdash; a mechanical read, not advice.</span>
       {/* BASE_URL-aware: the GitHub Pages copy is served under /trendlens/. */}
-      <a className="linklike" href={`${import.meta.env.BASE_URL}guide/`}>
-        Tutorial
+      <a className="tutorial-cta" href={`${import.meta.env.BASE_URL}guide.html`}>
+        <span>Tutorial</span>
+        <small>Learn what swing structure and break-of-structure mean</small>
       </a>
       <button type="button" className="linklike" onClick={() => dialogRef.current?.showModal()}>
         Privacy &amp; terms
