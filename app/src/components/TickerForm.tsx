@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import type { Interval, Market, SearchResult } from '../../../shared/types';
 import { searchSymbols } from '../lib/api';
 
 interface Props {
   busy: boolean;
-  onSubmit: (symbol: string, market: Market, interval: Interval) => void;
+  onSubmit: (symbol: string, market: Market, interval: Interval, refPrice?: number) => void;
 }
 
 const EXAMPLES: Record<Market, string> = {
@@ -14,9 +14,11 @@ const EXAMPLES: Record<Market, string> = {
 };
 
 export function TickerForm({ busy, onSubmit }: Props) {
+  const listId = useId();
   const [symbol, setSymbol] = useState('AAPL');
   const [market, setMarket] = useState<Market>('us');
   const [interval, setInterval] = useState<Interval>('1d');
+  const [refPrice, setRefPrice] = useState('');
 
   const [results, setResults] = useState<SearchResult[]>([]);
   const [open, setOpen] = useState(false);
@@ -56,8 +58,12 @@ export function TickerForm({ busy, onSubmit }: Props) {
 
   function submit(sym: string, mkt: Market) {
     const s = sym.trim().toUpperCase();
-    if (s && !busy) onSubmit(s, mkt, interval);
+    if (!s || busy) return;
+    const ref = Number.parseFloat(refPrice);
+    onSubmit(s, mkt, interval, Number.isFinite(ref) && ref > 0 ? ref : undefined);
   }
+
+  const optionId = (i: number) => `${listId}-opt-${i}`;
 
   return (
     <form
@@ -98,18 +104,22 @@ export function TickerForm({ busy, onSubmit }: Props) {
           spellCheck={false}
           placeholder={EXAMPLES[market]}
           aria-label="Ticker symbol"
-          aria-expanded={open}
           role="combobox"
-          aria-controls="ticker-listbox"
+          aria-expanded={open}
+          aria-controls={listId}
+          aria-autocomplete="list"
+          aria-activedescendant={open && active >= 0 ? optionId(active) : undefined}
         />
         {open && results.length ? (
-          <ul className="results" id="ticker-listbox" role="listbox">
+          <ul className="results" id={listId} role="listbox" aria-label="Matching symbols">
             {results.map((r, i) => (
               <li
                 key={r.symbol}
+                id={optionId(i)}
                 role="option"
                 aria-selected={i === active}
                 className={i === active ? 'active' : undefined}
+                onMouseEnter={() => setActive(i)}
                 onMouseDown={(e) => {
                   e.preventDefault();
                   pick(r);
@@ -122,6 +132,9 @@ export function TickerForm({ busy, onSubmit }: Props) {
             ))}
           </ul>
         ) : null}
+        <span className="sr-only" role="status" aria-live="polite">
+          {open && results.length ? `${results.length} matching symbol${results.length === 1 ? '' : 's'}` : ''}
+        </span>
       </label>
 
       <label className="field">
@@ -140,6 +153,22 @@ export function TickerForm({ busy, onSubmit }: Props) {
           <option value="1d">1 day</option>
           <option value="1wk">1 week</option>
         </select>
+      </label>
+
+      <label className="field">
+        <span>
+          Your price <small>optional</small>
+        </span>
+        <input
+          type="number"
+          inputMode="decimal"
+          min="0"
+          step="any"
+          value={refPrice}
+          onChange={(e) => setRefPrice(e.target.value)}
+          placeholder="e.g. 180"
+          aria-label="Your reference price (optional)"
+        />
       </label>
 
       <button type="submit" disabled={busy}>

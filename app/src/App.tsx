@@ -11,6 +11,7 @@ import './styles.css';
 interface Loaded {
   data: CandlesResponse;
   analysis: AnalysisResult;
+  refPrice?: number;
 }
 
 export default function App() {
@@ -18,26 +19,29 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [loaded, setLoaded] = useState<Loaded | null>(null);
 
-  const run = useCallback(async (symbol: string, market: Market, interval: Interval) => {
-    setBusy(true);
-    setError(null);
-    try {
-      const data = await fetchCandles(symbol, market, interval);
-      const analysis = analyzeCandles(data.candles);
-      setLoaded({ data, analysis });
-    } catch (err) {
-      setLoaded(null);
-      setError(
-        err instanceof ApiRequestError
-          ? err.message
-          : err instanceof Error
+  const run = useCallback(
+    async (symbol: string, market: Market, interval: Interval, refPrice?: number) => {
+      setBusy(true);
+      setError(null);
+      try {
+        const data = await fetchCandles(symbol, market, interval);
+        const analysis = analyzeCandles(data.candles);
+        setLoaded({ data, analysis, refPrice });
+      } catch (err) {
+        setLoaded(null);
+        setError(
+          err instanceof ApiRequestError
             ? err.message
-            : 'Something went wrong.',
-      );
-    } finally {
-      setBusy(false);
-    }
-  }, []);
+            : err instanceof Error
+              ? err.message
+              : 'Something went wrong.',
+        );
+      } finally {
+        setBusy(false);
+      }
+    },
+    [],
+  );
 
   return (
     <div className="app">
@@ -56,8 +60,12 @@ export default function App() {
 
       {loaded ? (
         <main className="result">
-          <PriceChart candles={loaded.data.candles} analysis={loaded.analysis} />
-          <Brief meta={loaded.data.meta} analysis={loaded.analysis} />
+          <PriceChart
+            candles={loaded.data.candles}
+            analysis={loaded.analysis}
+            refPrice={loaded.refPrice}
+          />
+          <Brief meta={loaded.data.meta} analysis={loaded.analysis} refPrice={loaded.refPrice} />
         </main>
       ) : null}
 

@@ -13,20 +13,27 @@ import { ema, emaPeriodFor } from '../analysis/ema';
 interface Props {
   candles: Candle[];
   analysis: AnalysisResult;
+  /** Optional user reference price to mark on the chart. */
+  refPrice?: number;
 }
 
 const UP = '#4bbf73';
 const DOWN = '#e5534b';
 const EMA_COLOR = '#e0a52b';
+const SWING_LOW_COLOR = '#5bc0c7';
+const REF_COLOR = '#c3ccd5';
 const GRID = '#1b2430';
 const TEXT = '#8b97a3';
 
+/** Recent bars shown by default; the rest of the history stays scrollable. */
+const DEFAULT_VISIBLE_BARS = 130;
+
 /**
- * Candles + EMA line + swing-high/low price lines. The swing levels are drawn
- * with `createPriceLine({ price })`, so they sit at the exact value the brief
- * reports — no separate screen-space positioning to drift.
+ * Candles + EMA line + swing-high/low price lines (and an optional reference
+ * line). Levels use `createPriceLine({ price })`, so they sit at the exact
+ * value the brief reports — no screen-space positioning to drift.
  */
-export function PriceChart({ candles, analysis }: Props) {
+export function PriceChart({ candles, analysis, refPrice }: Props) {
   const hostRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -91,19 +98,48 @@ export function PriceChart({ candles, analysis }: Props) {
     });
     candleSeries.createPriceLine({
       price: analysis.lastSwingLow.price,
-      color: '#5bc0c7',
+      color: SWING_LOW_COLOR,
       lineWidth: 1,
       lineStyle: LineStyle.Dashed,
       axisLabelVisible: true,
       title: 'swing low',
     });
 
-    chart.timeScale().fitContent();
+    const lows = candles.map((c) => c.low);
+    const highs = candles.map((c) => c.high);
+    if (
+      refPrice !== undefined &&
+      Number.isFinite(refPrice) &&
+      refPrice >= Math.min(...lows) &&
+      refPrice <= Math.max(...highs)
+    ) {
+      candleSeries.createPriceLine({
+        price: refPrice,
+        color: REF_COLOR,
+        lineWidth: 1,
+        lineStyle: LineStyle.Dotted,
+        axisLabelVisible: true,
+        title: 'your price',
+      });
+    }
+
+    // Open on the recent window rather than the whole 300-bar history.
+    const n = candles.length;
+    const bars = Math.min(n, DEFAULT_VISIBLE_BARS);
+    chart.timeScale().setVisibleLogicalRange({ from: n - bars, to: n + 1 });
+
     return () => {
       ro.disconnect();
       chart.remove();
     };
-  }, [candles, analysis]);
+  }, [candles, analysis, refPrice]);
 
-  return <div className="chart" ref={hostRef} role="img" aria-label="Price chart with EMA and swing levels" />;
+  return (
+    <div
+      className="chart"
+      ref={hostRef}
+      role="img"
+      aria-label={`Price chart: EMA line and swing levels for ${analysis.candleCount} bars`}
+    />
+  );
 }

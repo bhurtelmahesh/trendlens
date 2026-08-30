@@ -31,7 +31,9 @@ For the "other global" market, a bare ticker also tries the big exchange suffixe
 
 A single Cloudflare Worker. No second implementation to drift out of sync. CORS is an allowlist
 (plus `*.trendlens.pages.dev` preview deploys), there's a 60/60s per-IP rate limit, inputs are
-whitelisted, and the upstream fetch has a timeout — all from the first commit.
+whitelisted, and the upstream fetch has a timeout. Responses sit in the Cloudflare edge cache
+for their `max-age` (60s candles, 300s search), so repeat lookups of a symbol skip Yahoo
+entirely; the cached entry is CORS-free and the per-origin header is re-applied on read.
 
 ## Deliberately not in v1
 

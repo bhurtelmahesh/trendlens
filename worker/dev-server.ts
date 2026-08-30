@@ -17,8 +17,10 @@ createServer(async (nodeReq, nodeRes) => {
     headers: nodeReq.headers as HeadersInit,
   });
 
-  // No MARKET_RL binding locally; the worker falls back to its in-process limiter.
-  const response = await worker.fetch(request, {});
+  // No MARKET_RL binding and no edge cache locally; the worker degrades to its
+  // in-process limiter and skips caching.
+  const ctx = { waitUntil: (p: Promise<unknown>) => void p, passThroughOnException: () => {} };
+  const response = await worker.fetch(request, {}, ctx as ExecutionContext);
 
   nodeRes.statusCode = response.status;
   response.headers.forEach((value, name) => nodeRes.setHeader(name, value));

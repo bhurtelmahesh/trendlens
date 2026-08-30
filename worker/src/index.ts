@@ -19,27 +19,50 @@ function fallbackAllowed(key: string, limit = 60, windowMs = 60_000): boolean {
   return recent.length <= limit;
 }
 
-function json(
+const CANDLES_TTL = 60; // seconds
+const SEARCH_TTL = 300;
+
+/** A payload response with no CORS — CORS is per-origin and added on the way out. */
+function payload(
   body: CandlesResponse | SearchResponse | ApiError,
   status: number,
-  origin: string | null,
+  ttl: number,
 ): Response {
   return new Response(JSON.stringify(body), {
     status,
     headers: {
-      ...corsHeaders(origin),
       'Content-Type': 'application/json; charset=utf-8',
-      'Cache-Control': status === 200 ? 'public, max-age=60' : 'no-store',
+      'Cache-Control': status === 200 ? `public, max-age=${ttl}` : 'no-store',
     },
   });
 }
 
+function withCors(res: Response, origin: string | null): Response {
+  const headers = new Headers(res.headers);
+  for (const [k, v] of Object.entries(corsHeaders(origin))) headers.set(k, v);
+  return new Response(res.body, { status: res.status, headers });
+}
+
 export default {
-  async fetch(req: Request, env: Env): Promise<Response> {
+  async fetch(req: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const origin = req.headers.get('Origin');
     if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: corsHeaders(origin) });
-    if (req.method !== 'GET') return json({ error: 'Method not allowed.' }, 405, origin);
+    if (req.method !== 'GET') return withCors(payload({ error: 'Method not allowed.' }, 405, 0), origin);
 
+    const url = new URL(req.url);
+    const isApi = url.pathname === '/api/candles' || url.pathname === '/api/search';
+
+    // --- edge cache: same symbol/interval within the TTL skips Yahoo entirely,
+    //     which is also what keeps us under Yahoo's rate limit under load.
+    //     (`caches` is absent in the local Node dev server — degrade gracefully.) ---
+    const cache = typeof caches !== 'undefined' ? caches.default : undefined;
+    const cacheKey = new Request(`${url.origin}${url.pathname}${url.search}`, { method: 'GET' });
+    if (isApi && cache) {
+      const hit = await cache.match(cacheKey);
+      if (hit) return withCors(hit, origin);
+    }
+
+    // --- rate limit (only on a cache miss) ---
     const key = req.headers.get('CF-Connecting-IP') || origin || 'anon';
     let limited = !fallbackAllowed(key);
     if (!limited && env.MARKET_RL) {
@@ -50,30 +73,34 @@ export default {
       }
     }
     if (limited) {
-      return new Response(JSON.stringify({ error: 'Rate limited. Try again shortly.' } satisfies ApiError), {
+      const res = new Response(JSON.stringify({ error: 'Rate limited. Try again shortly.' } satisfies ApiError), {
         status: 429,
-        headers: { ...corsHeaders(origin), 'Content-Type': 'application/json', 'Retry-After': '60' },
+        headers: { 'Content-Type': 'application/json', 'Retry-After': '60' },
       });
+      return withCors(res, origin);
     }
 
-    const url = new URL(req.url);
-
+    let res: Response;
     if (url.pathname === '/api/search') {
       const q = (url.searchParams.get('q') ?? '').slice(0, 48);
-      return json({ results: await searchSymbols(q) }, 200, origin);
+      res = payload({ results: await searchSymbols(q) }, 200, SEARCH_TTL);
+    } else if (url.pathname === '/api/candles') {
+      const parsed = parseCandlesQuery(url.searchParams);
+      if (typeof parsed === 'string') {
+        res = payload({ error: parsed }, 400, 0);
+      } else {
+        try {
+          res = payload(await getCandles(parsed.symbol, parsed.market, parsed.interval), 200, CANDLES_TTL);
+        } catch (err) {
+          const message = err instanceof Error ? err.message : 'Market data lookup failed.';
+          res = payload({ error: `Couldn't load ${parsed.symbol}: ${message}` }, 502, 0);
+        }
+      }
+    } else {
+      res = payload({ error: 'Not found.' }, 404, 0);
     }
 
-    if (url.pathname !== '/api/candles') return json({ error: 'Not found.' }, 404, origin);
-
-    const parsed = parseCandlesQuery(url.searchParams);
-    if (typeof parsed === 'string') return json({ error: parsed }, 400, origin);
-
-    try {
-      const data = await getCandles(parsed.symbol, parsed.market, parsed.interval);
-      return json(data, 200, origin);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Market data lookup failed.';
-      return json({ error: `Couldn't load ${parsed.symbol}: ${message}` }, 502, origin);
-    }
+    if (isApi && cache && res.status === 200) ctx.waitUntil(cache.put(cacheKey, res.clone()));
+    return withCors(res, origin);
   },
 };

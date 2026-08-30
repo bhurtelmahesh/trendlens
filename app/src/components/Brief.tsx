@@ -4,10 +4,11 @@ import { toBrief } from '../analysis/brief';
 interface Props {
   meta: CandlesMeta;
   analysis: AnalysisResult;
+  refPrice?: number;
 }
 
-export function Brief({ meta, analysis }: Props) {
-  const brief = toBrief(analysis);
+export function Brief({ meta, analysis, refPrice }: Props) {
+  const brief = toBrief(analysis, refPrice);
   const dirClass = `dir dir-${analysis.direction}`;
 
   return (
@@ -48,6 +49,7 @@ export function Brief({ meta, analysis }: Props) {
         </div>
       </div>
 
+      {brief.reference ? <p className="reference">{brief.reference}</p> : null}
       {meta.notice ? <p className="notice">{meta.notice}</p> : null}
     </section>
   );

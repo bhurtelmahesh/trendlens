@@ -6,6 +6,7 @@ export interface Brief {
   observations: string[];
   ifItHolds: string;
   ifItBreaks: string;
+  reference?: string;
 }
 
 function money(n: number): string {
@@ -21,7 +22,7 @@ const STRUCTURE_PHRASE: Record<AnalysisResult['structure'], string> = {
 };
 
 /** Turn the numeric result into plain, non-advice language. */
-export function toBrief(r: AnalysisResult): Brief {
+export function toBrief(r: AnalysisResult, refPrice?: number): Brief {
   const hi = money(r.lastSwingHigh.price);
   const lo = money(r.lastSwingLow.price);
   const slope = `${r.emaSlopePctPerBar >= 0 ? '+' : ''}${r.emaSlopePctPerBar.toFixed(3)}% per bar`;
@@ -65,5 +66,16 @@ export function toBrief(r: AnalysisResult): Brief {
       ? `A decisive close below the swing low near ${lo} would end the sequence of higher lows.`
       : `Continued rejection below the swing high near ${hi} keeps pressure toward ${lo}.`;
 
-  return { headline, summary, observations, ifItHolds, ifItBreaks };
+  let reference: string | undefined;
+  if (refPrice !== undefined && Number.isFinite(refPrice) && refPrice > 0) {
+    const p = money(refPrice);
+    reference =
+      refPrice < r.lastSwingLow.price
+        ? `Your price (${p}) is below the recent swing low (${lo}) — under the current structure.`
+        : refPrice > r.lastSwingHigh.price
+          ? `Your price (${p}) is above the recent swing high (${hi}) — above the current structure.`
+          : `Your price (${p}) sits inside the recent range, between the swing low (${lo}) and swing high (${hi}).`;
+  }
+
+  return { headline, summary, observations, ifItHolds, ifItBreaks, reference };
 }
