@@ -5,8 +5,6 @@ const ALLOWED = new Set([
   'https://bhurtelmahesh.github.io',
   'https://trendlens.web.app',
   'https://trendlens.firebaseapp.com',
-  'https://chartlens101.web.app',
-  'https://chartlens101.firebaseapp.com',
   'http://localhost:5173',
   'http://127.0.0.1:5173',
 ]);
