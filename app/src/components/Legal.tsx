@@ -6,13 +6,9 @@ export function Legal() {
   return (
     <footer className="footer">
       <span>TrendLens &mdash; a mechanical read, not advice.</span>
-      <a
-        className="linklike"
-        href="https://claude.ai/code/artifact/5cbfd181-305e-4994-be17-fb4a789a5d2d"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        What the terms mean
+      {/* BASE_URL-aware: the GitHub Pages copy is served under /trendlens/. */}
+      <a className="linklike" href={`${import.meta.env.BASE_URL}guide/`}>
+        Tutorial
       </a>
       <button type="button" className="linklike" onClick={() => dialogRef.current?.showModal()}>
         Privacy &amp; terms
