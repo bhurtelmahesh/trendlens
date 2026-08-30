@@ -3,6 +3,7 @@ import type { AnalysisResult, CandlesResponse, Interval, Market } from '../../sh
 import { analyzeCandles } from './analysis/analyze';
 import { Brief } from './components/Brief';
 import { HonestyPanel } from './components/HonestyPanel';
+import { Legal } from './components/Legal';
 import { PriceChart } from './components/PriceChart';
 import { TickerForm } from './components/TickerForm';
 import { ApiRequestError, fetchCandles } from './lib/api';
@@ -70,6 +71,7 @@ export default function App() {
       ) : null}
 
       <HonestyPanel />
+      <Legal />
     </div>
   );
 }

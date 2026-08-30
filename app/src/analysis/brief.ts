@@ -1,12 +1,19 @@
 import type { AnalysisResult } from '../../../shared/types';
 
+export type ReferenceTone = 'aligned' | 'neutral' | 'against';
+
+export interface ReferenceRead {
+  text: string;
+  tone: ReferenceTone;
+}
+
 export interface Brief {
   headline: string;
   summary: string;
   observations: string[];
   ifItHolds: string;
   ifItBreaks: string;
-  reference?: string;
+  reference?: ReferenceRead;
 }
 
 function money(n: number): string {
@@ -15,11 +22,69 @@ function money(n: number): string {
   return n.toLocaleString(undefined, { maximumFractionDigits: 6 });
 }
 
+function moveSize(absPct: number): string {
+  if (absPct < 3) return 'a small move';
+  if (absPct < 10) return 'a moderate move';
+  if (absPct < 25) return 'a large move';
+  return 'a very large move';
+}
+
 const STRUCTURE_PHRASE: Record<AnalysisResult['structure'], string> = {
   'higher-highs-higher-lows': 'higher swing highs and higher swing lows',
   'lower-highs-lower-lows': 'lower swing highs and lower swing lows',
   mixed: 'swing highs and lows that are not consistently rising or falling',
 };
+
+/**
+ * Where a reference price sits versus the current structure, and whether the
+ * trend is leaning toward it. Colour tone: aligned = with the trend,
+ * against = the trend would have to turn first, neutral = no trend.
+ */
+export function describeReference(r: AnalysisResult, refPrice: number): ReferenceRead | undefined {
+  if (!Number.isFinite(refPrice) || refPrice <= 0) return undefined;
+
+  const gap = ((refPrice - r.lastClose) / r.lastClose) * 100;
+  const p = money(refPrice);
+  const hi = money(r.lastSwingHigh.price);
+  const lo = money(r.lastSwingLow.price);
+
+  const place =
+    refPrice < r.lastSwingLow.price
+      ? `below the swing low (${lo})`
+      : refPrice > r.lastSwingHigh.price
+        ? `above the swing high (${hi})`
+        : `inside the recent range (${lo}–${hi})`;
+
+  if (Math.abs(gap) < 0.3) {
+    return {
+      text: `${p} is about where price is now, ${place}.`,
+      tone: 'neutral',
+    };
+  }
+
+  const dirNeeded: 'up' | 'down' = gap > 0 ? 'up' : 'down';
+  const size = moveSize(Math.abs(gap));
+  const gapStr = `${gap > 0 ? '+' : ''}${gap.toFixed(1)}%`;
+  const trend = r.direction === 'up' ? 'up-trend' : 'down-trend';
+
+  let tone: ReferenceTone;
+  let lean: string;
+  if (r.direction === 'range') {
+    tone = 'neutral';
+    lean = "there's no trend leaning either way, so getting there is a coin toss";
+  } else if (r.direction === dirNeeded) {
+    tone = 'aligned';
+    lean = `the current ${trend} is already heading that way`;
+  } else {
+    tone = 'against';
+    lean = `the current ${trend} would have to stall or reverse first`;
+  }
+
+  return {
+    text: `Reaching ${p} is ${size} ${dirNeeded} (${gapStr}), ${place} — ${lean}.`,
+    tone,
+  };
+}
 
 /** Turn the numeric result into plain, non-advice language. */
 export function toBrief(r: AnalysisResult, refPrice?: number): Brief {
@@ -66,16 +131,12 @@ export function toBrief(r: AnalysisResult, refPrice?: number): Brief {
       ? `A decisive close below the swing low near ${lo} would end the sequence of higher lows.`
       : `Continued rejection below the swing high near ${hi} keeps pressure toward ${lo}.`;
 
-  let reference: string | undefined;
-  if (refPrice !== undefined && Number.isFinite(refPrice) && refPrice > 0) {
-    const p = money(refPrice);
-    reference =
-      refPrice < r.lastSwingLow.price
-        ? `Your price (${p}) is below the recent swing low (${lo}) — under the current structure.`
-        : refPrice > r.lastSwingHigh.price
-          ? `Your price (${p}) is above the recent swing high (${hi}) — above the current structure.`
-          : `Your price (${p}) sits inside the recent range, between the swing low (${lo}) and swing high (${hi}).`;
-  }
-
-  return { headline, summary, observations, ifItHolds, ifItBreaks, reference };
+  return {
+    headline,
+    summary,
+    observations,
+    ifItHolds,
+    ifItBreaks,
+    reference: refPrice === undefined ? undefined : describeReference(r, refPrice),
+  };
 }

@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { AnalysisResult } from '../../../shared/types';
-import { toBrief } from './brief';
+import { describeReference, toBrief } from './brief';
 
-const base: AnalysisResult = {
+const up: AnalysisResult = {
   direction: 'up',
   confidence: 60,
   band: 'Moderate',
@@ -13,28 +13,46 @@ const base: AnalysisResult = {
   trendFit: 0.6,
   lastSwingHigh: { index: 100, price: 120 },
   lastSwingLow: { index: 80, price: 100 },
+  lastClose: 110,
   candleCount: 200,
 };
+const range: AnalysisResult = { ...up, direction: 'range', structure: 'mixed' };
 
-describe('toBrief reference line', () => {
-  it('is absent without a reference price', () => {
-    expect(toBrief(base).reference).toBeUndefined();
+describe('describeReference', () => {
+  it('is undefined for a non-positive price', () => {
+    expect(describeReference(up, 0)).toBeUndefined();
+    expect(describeReference(up, Number.NaN)).toBeUndefined();
   });
 
-  it('places a price inside the range', () => {
-    expect(toBrief(base, 110).reference).toMatch(/inside the recent range/);
+  it('a higher target in an up-trend reads as aligned (green)', () => {
+    const r = describeReference(up, 130)!;
+    expect(r.tone).toBe('aligned');
+    expect(r.text).toMatch(/above the swing high/);
+    expect(r.text).toMatch(/up-trend is already heading that way/);
   });
 
-  it('places a price below the swing low', () => {
-    expect(toBrief(base, 90).reference).toMatch(/below the recent swing low/);
+  it('a lower target in an up-trend reads as against (red)', () => {
+    const r = describeReference(up, 90)!;
+    expect(r.tone).toBe('against');
+    expect(r.text).toMatch(/below the swing low/);
+    expect(r.text).toMatch(/would have to stall or reverse/);
   });
 
-  it('places a price above the swing high', () => {
-    expect(toBrief(base, 130).reference).toMatch(/above the recent swing high/);
+  it('any target with no trend reads as neutral (yellow)', () => {
+    expect(describeReference(range, 130)!.tone).toBe('neutral');
+    expect(describeReference(range, 90)!.tone).toBe('neutral');
   });
 
-  it('ignores a non-positive reference price', () => {
-    expect(toBrief(base, 0).reference).toBeUndefined();
-    expect(toBrief(base, Number.NaN).reference).toBeUndefined();
+  it("a target at today's price is flagged as such", () => {
+    expect(describeReference(up, 110.1)!.text).toMatch(/about where price is now/);
+  });
+});
+
+describe('toBrief', () => {
+  it('omits the reference when no price is given', () => {
+    expect(toBrief(up).reference).toBeUndefined();
+  });
+  it('includes a toned reference when a price is given', () => {
+    expect(toBrief(up, 130).reference?.tone).toBe('aligned');
   });
 });

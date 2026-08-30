@@ -49,7 +49,9 @@ export function Brief({ meta, analysis, refPrice }: Props) {
         </div>
       </div>
 
-      {brief.reference ? <p className="reference">{brief.reference}</p> : null}
+      {brief.reference ? (
+        <p className={`reference reference-${brief.reference.tone}`}>{brief.reference.text}</p>
+      ) : null}
       {meta.notice ? <p className="notice">{meta.notice}</p> : null}
     </section>
   );

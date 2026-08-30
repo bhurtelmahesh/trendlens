@@ -8,6 +8,7 @@ import {
   type UTCTimestamp,
 } from 'lightweight-charts';
 import type { AnalysisResult, Candle } from '../../../shared/types';
+import { describeReference } from '../analysis/brief';
 import { ema, emaPeriodFor } from '../analysis/ema';
 
 interface Props {
@@ -21,9 +22,10 @@ const UP = '#4bbf73';
 const DOWN = '#e5534b';
 const EMA_COLOR = '#e0a52b';
 const SWING_LOW_COLOR = '#5bc0c7';
-const REF_COLOR = '#c3ccd5';
 const GRID = '#1b2430';
 const TEXT = '#8b97a3';
+
+const REF_TONE_COLOR = { aligned: '#4bbf73', neutral: '#e0a52b', against: '#e5534b' } as const;
 
 /** Recent bars shown by default; the rest of the history stays scrollable. */
 const DEFAULT_VISIBLE_BARS = 130;
@@ -113,10 +115,11 @@ export function PriceChart({ candles, analysis, refPrice }: Props) {
       refPrice >= Math.min(...lows) &&
       refPrice <= Math.max(...highs)
     ) {
+      const tone = describeReference(analysis, refPrice)?.tone ?? 'neutral';
       candleSeries.createPriceLine({
         price: refPrice,
-        color: REF_COLOR,
-        lineWidth: 1,
+        color: REF_TONE_COLOR[tone],
+        lineWidth: 2,
         lineStyle: LineStyle.Dotted,
         axisLabelVisible: true,
         title: 'your price',

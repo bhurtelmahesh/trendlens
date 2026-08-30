@@ -80,5 +80,7 @@ export interface AnalysisResult {
   trendFit: number;
   lastSwingHigh: SwingPoint;
   lastSwingLow: SwingPoint;
+  /** The most recent close. */
+  lastClose: number;
   candleCount: number;
 }

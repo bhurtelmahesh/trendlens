@@ -326,9 +326,26 @@ body {
 .reference {
   margin: 0;
   font-size: 13px;
-  color: #c3ccd5;
-  border-left: 2px solid var(--muted);
-  padding: 2px 0 2px 12px;
+  color: var(--text);
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  border-left-width: 4px;
+}
+.reference-aligned {
+  border-color: #2f6b45;
+  border-left-color: var(--up);
+  background: linear-gradient(90deg, rgba(75, 191, 115, 0.16), rgba(75, 191, 115, 0.02));
+}
+.reference-neutral {
+  border-color: #6b5a1f;
+  border-left-color: var(--accent);
+  background: linear-gradient(90deg, rgba(224, 165, 43, 0.16), rgba(224, 165, 43, 0.02));
+}
+.reference-against {
+  border-color: #6b2b28;
+  border-left-color: var(--down);
+  background: linear-gradient(90deg, rgba(229, 83, 75, 0.16), rgba(229, 83, 75, 0.02));
 }
 
 /* honesty */
@@ -372,4 +389,73 @@ body {
     text-align: left;
     justify-items: start;
   }
+}
+
+/* footer + legal */
+.footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  align-items: baseline;
+  border-top: 1px solid var(--line);
+  padding-top: 20px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.linklike {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--accent);
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+}
+.linklike:hover {
+  color: #f0c05a;
+}
+.legal-dialog {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+  color: var(--text);
+  padding: 0;
+  max-width: 620px;
+  width: calc(100% - 32px);
+}
+.legal-dialog::backdrop {
+  background: rgba(4, 6, 9, 0.6);
+}
+.legal-body {
+  padding: 22px 24px 26px;
+}
+.legal-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+.legal-head h2 {
+  margin: 0;
+  font-size: 18px;
+}
+.legal-body h3 {
+  margin: 20px 0 6px;
+  font-size: 14px;
+}
+.legal-body p,
+.legal-body li {
+  margin: 8px 0;
+  font-size: 13px;
+  line-height: 1.65;
+  color: #c3ccd5;
+}
+.legal-body ul {
+  margin: 8px 0;
+  padding-left: 18px;
+}
+.legal-body code {
+  font-size: 12px;
+  color: var(--muted);
 }

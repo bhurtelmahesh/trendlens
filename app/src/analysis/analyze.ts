@@ -102,6 +102,7 @@ export function analyzeCandles(input: Candle[]): AnalysisResult {
     trendFit,
     lastSwingHigh: swings.high,
     lastSwingLow: swings.low,
+    lastClose: closes[n - 1]!,
     candleCount: n,
   };
 }
