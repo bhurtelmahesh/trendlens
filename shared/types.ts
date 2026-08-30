@@ -38,6 +38,21 @@ export interface ApiError {
   error: string;
 }
 
+// ---- symbol search / autocomplete ----
+
+export interface SearchResult {
+  symbol: string;
+  name: string;
+  exchange: string;
+  /** Best-guess market bucket for this result. */
+  market: Market;
+  type: 'equity' | 'etf' | 'crypto' | 'index' | 'other';
+}
+
+export interface SearchResponse {
+  results: SearchResult[];
+}
+
 // ---- analysis output ----
 
 export type Direction = 'up' | 'down' | 'range';

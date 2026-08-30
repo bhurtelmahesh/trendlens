@@ -2,7 +2,23 @@ import type { Candle, CandlesResponse, Interval, Market } from '../../../shared/
 
 const RANGE: Record<Interval, string> = { '1h': '3mo', '1d': '2y', '1wk': '10y' };
 const MAX_BARS = 320;
+const MIN_BARS = 30;
 const FETCH_TIMEOUT_MS = 12_000;
+
+// For "other global": if the user didn't add an exchange suffix, try the
+// big ones. Order = rough listing-volume priority. `''` (bare) goes first.
+const GLOBAL_SUFFIXES = ['', '.T', '.HK', '.L', '.DE', '.TO', '.AX', '.PA', '.SW', '.NS'];
+const SUFFIX_EXCHANGE: Record<string, string> = {
+  '.T': 'Tokyo',
+  '.HK': 'Hong Kong',
+  '.L': 'London',
+  '.DE': 'Frankfurt',
+  '.TO': 'Toronto',
+  '.AX': 'Sydney',
+  '.PA': 'Paris',
+  '.SW': 'Zurich',
+  '.NS': 'India (NSE)',
+};
 
 /** A real OHLC bar has four positive prices. Yahoo pads the still-forming
  *  last bar with nulls, which Number() turns into 0 and isFinite() accepts. */
@@ -10,14 +26,21 @@ function isRealBar(c: Candle): boolean {
   return [c.open, c.high, c.low, c.close].every((v) => Number.isFinite(v) && v > 0);
 }
 
-/** us/global equities keep their symbol; crypto is quoted against USD. */
-function resolveSymbol(symbol: string, market: Market): string {
-  if (market !== 'crypto') return symbol;
-  if (/-USD$/.test(symbol)) return symbol;
-  return `${symbol.replace(/USD[TC]?$/, '')}-USD`;
+/** The list of symbols to try, in order. First hit wins. */
+function candidateSymbols(symbol: string, market: Market): string[] {
+  if (market === 'crypto') {
+    return [/-USD$/.test(symbol) ? symbol : `${symbol.replace(/USD[TC]?$/, '')}-USD`];
+  }
+  // An explicit suffix (AAPL.MX) or index (^GSPC) is taken as-is.
+  if (symbol.includes('.') || symbol.startsWith('^')) return [symbol];
+  if (market === 'global') return GLOBAL_SUFFIXES.map((s) => symbol + s);
+  return [symbol];
 }
 
-async function fetchJson(url: string): Promise<unknown> {
+async function fetchChart(symbol: string, interval: Interval): Promise<YahooChart> {
+  const url =
+    `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}` +
+    `?interval=${interval}&range=${RANGE[interval]}`;
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
   try {
@@ -25,10 +48,17 @@ async function fetchJson(url: string): Promise<unknown> {
       signal: ctrl.signal,
       headers: { 'User-Agent': 'Mozilla/5.0 ChartLens/2.0', Accept: 'application/json' },
     });
+    if (res.status === 404) throw new NotFound(symbol);
     if (!res.ok) throw new Error(`provider returned ${res.status}`);
-    return await res.json();
+    return (await res.json()) as YahooChart;
   } finally {
     clearTimeout(timer);
+  }
+}
+
+class NotFound extends Error {
+  constructor(readonly symbol: string) {
+    super(`no such symbol: ${symbol}`);
   }
 }
 
@@ -53,8 +83,7 @@ interface YahooChart {
 
 function parse(payload: YahooChart): { name: string | null; candles: Candle[] } {
   const result = payload.chart?.result?.[0];
-  const err = payload.chart?.error;
-  if (err) throw new Error(err.description || 'provider error');
+  if (payload.chart?.error) throw new Error(payload.chart.error.description || 'provider error');
   if (!result?.timestamp?.length) throw new Error('no data for that symbol');
 
   const q = result.indicators?.quote?.[0] ?? {};
@@ -69,8 +98,7 @@ function parse(payload: YahooChart): { name: string | null; candles: Candle[] } 
     }))
     .filter(isRealBar);
 
-  const name = result.meta?.longName || result.meta?.shortName || null;
-  return { name, candles };
+  return { name: result.meta?.longName || result.meta?.shortName || null, candles };
 }
 
 export async function getCandles(
@@ -78,16 +106,34 @@ export async function getCandles(
   market: Market,
   interval: Interval,
 ): Promise<CandlesResponse> {
-  const resolved = resolveSymbol(symbol, market);
-  const url =
-    `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(resolved)}` +
-    `?interval=${interval}&range=${RANGE[interval]}`;
+  const candidates = candidateSymbols(symbol, market);
+  let lastError: unknown;
 
-  const { name, candles } = parse((await fetchJson(url)) as YahooChart);
-  if (candles.length < 30) throw new Error(`not enough history for ${resolved}`);
+  for (const candidate of candidates) {
+    try {
+      const { name, candles } = parse(await fetchChart(candidate, interval));
+      if (candles.length < MIN_BARS) {
+        lastError = new Error(`not enough history for ${candidate}`);
+        continue;
+      }
+      const suffix = candidate.slice(symbol.length);
+      const notice =
+        suffix && SUFFIX_EXCHANGE[suffix]
+          ? `Matched ${candidate} on ${SUFFIX_EXCHANGE[suffix]}. Add the suffix (${suffix}) next time to skip the guess.`
+          : undefined;
+      return {
+        meta: { symbol: candidate, name, market, interval, provider: 'yahoo', ...(notice ? { notice } : {}) },
+        candles: candles.slice(-MAX_BARS),
+      };
+    } catch (err) {
+      lastError = err;
+    }
+  }
 
-  return {
-    meta: { symbol: resolved, name, market, interval, provider: 'yahoo' },
-    candles: candles.slice(-MAX_BARS),
-  };
+  if (market === 'global' && !symbol.includes('.')) {
+    throw new Error(
+      `no exchange had "${symbol}". Try adding the suffix — .T Tokyo, .L London, .HK Hong Kong, .DE Frankfurt.`,
+    );
+  }
+  throw lastError instanceof Error ? lastError : new Error(`could not load ${symbol}`);
 }

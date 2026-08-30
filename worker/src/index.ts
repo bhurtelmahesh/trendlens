@@ -1,5 +1,6 @@
-import type { ApiError, CandlesResponse } from '../../shared/types';
+import type { ApiError, CandlesResponse, SearchResponse } from '../../shared/types';
 import { corsHeaders } from './cors';
+import { searchSymbols } from './providers/search';
 import { getCandles } from './providers/yahoo';
 import { parseCandlesQuery } from './validate';
 
@@ -18,7 +19,11 @@ function fallbackAllowed(key: string, limit = 60, windowMs = 60_000): boolean {
   return recent.length <= limit;
 }
 
-function json(body: CandlesResponse | ApiError, status: number, origin: string | null): Response {
+function json(
+  body: CandlesResponse | SearchResponse | ApiError,
+  status: number,
+  origin: string | null,
+): Response {
   return new Response(JSON.stringify(body), {
     status,
     headers: {
@@ -52,6 +57,12 @@ export default {
     }
 
     const url = new URL(req.url);
+
+    if (url.pathname === '/api/search') {
+      const q = (url.searchParams.get('q') ?? '').slice(0, 48);
+      return json({ results: await searchSymbols(q) }, 200, origin);
+    }
+
     if (url.pathname !== '/api/candles') return json({ error: 'Not found.' }, 404, origin);
 
     const parsed = parseCandlesQuery(url.searchParams);

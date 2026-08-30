@@ -1,4 +1,4 @@
-import type { CandlesResponse, Interval, Market } from '../../../shared/types';
+import type { CandlesResponse, Interval, Market, SearchResult } from '../../../shared/types';
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? 'http://localhost:8787';
 const TIMEOUT_MS = 20_000;
@@ -32,5 +32,18 @@ export async function fetchCandles(
     throw new ApiRequestError('Could not reach the market-data service.');
   } finally {
     clearTimeout(timer);
+  }
+}
+
+/** Best-effort symbol search for autocomplete. Returns [] on any problem. */
+export async function searchSymbols(query: string, signal?: AbortSignal): Promise<SearchResult[]> {
+  if (query.trim().length < 2) return [];
+  try {
+    const res = await fetch(`${API_BASE}/api/search?q=${encodeURIComponent(query.trim())}`, { signal });
+    if (!res.ok) return [];
+    const body = (await res.json()) as { results?: SearchResult[] };
+    return body.results ?? [];
+  } catch {
+    return [];
   }
 }
