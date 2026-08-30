@@ -402,6 +402,9 @@ body {
   font-size: 13px;
   color: var(--muted);
 }
+a.linklike {
+  text-decoration: underline;
+}
 .linklike {
   background: none;
   border: 0;

@@ -17,7 +17,27 @@ function dropCspInDev(): Plugin {
 
 // Root ('/') for Cloudflare Pages; the repo name ('/trendlens/' etc.) for the
 // GitHub Pages project site — the workflow sets VITE_BASE for that build.
+/**
+ * A production build with no VITE_API_BASE silently ships the localhost dev
+ * fallback in `lib/api.ts`, and the deployed site then fails every request with
+ * "Could not reach the market-data service". That shipped once; fail loudly instead.
+ */
+function requireApiBase() {
+  return {
+    name: 'require-api-base',
+    apply: 'build' as const,
+    configResolved(cfg: { env: Record<string, string> }) {
+      if (!cfg.env.VITE_API_BASE) {
+        throw new Error(
+          'VITE_API_BASE is not set. A production build without it ships the ' +
+            'localhost fallback. Set it in app/.env.production or the environment.',
+        );
+      }
+    },
+  };
+}
+
 export default defineConfig({
   base: process.env.VITE_BASE ?? '/',
-  plugins: [react(), dropCspInDev()],
+  plugins: [react(), dropCspInDev(), requireApiBase()],
 });
