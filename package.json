@@ -1,0 +1,18 @@
+{
+  "name": "chartlens2",
+  "private": true,
+  "version": "1.0.0",
+  "description": "ChartLens — an honest, explainable read of a ticker's current trend structure.",
+  "workspaces": [
+    "app",
+    "worker"
+  ],
+  "scripts": {
+    "dev": "npm --workspace app run dev",
+    "dev:worker": "npm --workspace worker run dev",
+    "build": "npm --workspace app run build",
+    "test": "npm --workspace app run test",
+    "typecheck": "npm --workspace app exec tsc --noEmit && npm --workspace worker exec tsc --noEmit",
+    "lint": "npm --workspace app run lint"
+  }
+}
