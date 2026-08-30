@@ -44,7 +44,7 @@ body {
 /* form */
 .form {
   display: grid;
-  grid-template-columns: 1fr 160px 130px auto;
+  grid-template-columns: minmax(160px, 1fr) minmax(120px, max-content) minmax(110px, max-content) max-content;
   gap: 12px;
   align-items: end;
   background: var(--panel);
@@ -277,7 +277,16 @@ body {
   line-height: 1.7;
 }
 
-@media (max-width: 720px) {
+@media (max-width: 860px) {
+  .form {
+    grid-template-columns: 1fr 1fr;
+  }
+  .form button {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 620px) {
   .form,
   .scenarios,
   .honesty {
