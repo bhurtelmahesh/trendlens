@@ -22,13 +22,15 @@ which the parser handles by requiring every OHLC value to be `> 0`. Binance 403s
 so crypto goes through Yahoo `-USD`. Other providers get added to `worker/src/providers/` once
 each is proven the same way — not before.
 
-No symbol autocomplete: Yahoo's search endpoint is unreliable. The user types the exact symbol,
-with examples per market.
+Symbol entry: an `/api/search` endpoint proxies Yahoo's symbol search for autocomplete, and is
+best-effort — it returns `[]` on any failure and the form still works with an exact symbol.
+For the "other global" market, a bare ticker also tries the big exchange suffixes
+(`.T .HK .L .DE …`) and reports which one matched.
 
 ## One backend
 
 A single Cloudflare Worker. No second implementation to drift out of sync. CORS is an allowlist
-(plus `*.chartlens2.pages.dev` preview deploys), there's a 60/60s per-IP rate limit, inputs are
+(plus `*.trendlens.pages.dev` preview deploys), there's a 60/60s per-IP rate limit, inputs are
 whitelisted, and the upstream fetch has a timeout — all from the first commit.
 
 ## Deliberately not in v1

@@ -42,7 +42,7 @@ export default function App() {
   return (
     <div className="app">
       <header className="masthead">
-        <h1>ChartLens</h1>
+        <h1>TrendLens</h1>
         <p>See the structure of a price series &mdash; measured, not guessed.</p>
       </header>
 

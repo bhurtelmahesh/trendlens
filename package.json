@@ -1,8 +1,8 @@
 {
-  "name": "chartlens2",
+  "name": "trendlens",
   "private": true,
   "version": "1.0.0",
-  "description": "ChartLens — an honest, explainable read of a ticker's current trend structure.",
+  "description": "TrendLens — an honest, explainable read of a ticker's current trend structure.",
   "workspaces": [
     "app",
     "worker"

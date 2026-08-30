@@ -24,5 +24,5 @@ createServer(async (nodeReq, nodeRes) => {
   response.headers.forEach((value, name) => nodeRes.setHeader(name, value));
   nodeRes.end(Buffer.from(await response.arrayBuffer()));
 }).listen(PORT, () => {
-  console.log(`chartlens2 worker (dev) → http://localhost:${PORT}/api/candles?symbol=AAPL&market=us&interval=1d`);
+  console.log(`trendlens worker (dev) → http://localhost:${PORT}/api/candles?symbol=AAPL&market=us&interval=1d`);
 });

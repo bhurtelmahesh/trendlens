@@ -46,7 +46,7 @@ async function fetchChart(symbol: string, interval: Interval): Promise<YahooChar
   try {
     const res = await fetch(url, {
       signal: ctrl.signal,
-      headers: { 'User-Agent': 'Mozilla/5.0 ChartLens/2.0', Accept: 'application/json' },
+      headers: { 'User-Agent': 'Mozilla/5.0 TrendLens/1.0', Accept: 'application/json' },
     });
     if (res.status === 404) throw new NotFound(symbol);
     if (!res.ok) throw new Error(`provider returned ${res.status}`);

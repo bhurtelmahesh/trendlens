@@ -1,4 +1,4 @@
-name = "chartlens2-api"
+name = "trendlens-api"
 main = "src/index.ts"
 compatibility_date = "2026-08-30"
 

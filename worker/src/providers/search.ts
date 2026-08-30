@@ -43,7 +43,7 @@ export async function searchSymbols(query: string): Promise<SearchResult[]> {
   try {
     const res = await fetch(url, {
       signal: ctrl.signal,
-      headers: { 'User-Agent': 'Mozilla/5.0 ChartLens/2.0', Accept: 'application/json' },
+      headers: { 'User-Agent': 'Mozilla/5.0 TrendLens/1.0', Accept: 'application/json' },
     });
     if (!res.ok) return [];
     const data = (await res.json()) as YahooSearch;

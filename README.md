@@ -1,11 +1,14 @@
-# ChartLens
+# TrendLens
 
 Type a ticker. Get a mechanical read of its current trend structure — the slope of an
 exponential moving average, the sequence of swing highs and lows, and whether the latest close
 has broken the most recent swing — stated plainly. **Not advice.**
 
-This is a from-scratch rebuild. It ships one thing and ships it honestly: the chart, the
+A from-scratch rebuild of ChartLens. It ships one thing and ships it honestly: the chart, the
 numbers, and the words all come from the same calculation.
+
+- **App:** https://trendlens.pages.dev  (mirror: https://bhurtelmahesh.github.io/chartlens)
+- **API:** https://trendlens-api.chartlens101.workers.dev
 
 ## Layout
 
@@ -37,8 +40,11 @@ npm run build           # tsc -b && vite build -> app/dist
 
 ## Deploy
 
-Frontend → Cloudflare Pages (`app/dist`). API → the Worker (`npm --workspace worker run deploy`).
-Set `VITE_API_BASE` to the deployed Worker URL when building the app for production.
+- **API:** `npm --workspace worker run deploy` (Cloudflare Worker).
+- **Frontend, Cloudflare Pages:** `VITE_API_BASE=<worker-url> npm --workspace app run build`, then
+  `wrangler pages deploy app/dist --project-name=trendlens`.
+- **Frontend, GitHub Pages:** `.github/workflows/pages.yml` builds and deploys on every push to
+  `main` (base path = repo name; API base baked in).
 
 ## Data
 
