@@ -312,7 +312,7 @@ footer{padding:44px 0 72px;color:var(--muted);font-size:13px}
     <div class="sec-head">
       <p class="eyebrow">The part most walkthroughs skip</p>
       <h2>What happened next</h2>
-      <p>The original snapshot was taken at 13:49, <em>inside</em> the displacement candle &mdash; so the entry, stop and target were projections, not history. Here is how it actually resolved, from the same price data.</p>
+      <p>The setup is read at the displacement candle on 2 September, so the entry, stop and target are forward-looking from that moment &mdash; not history. Here is how it actually resolved, from the same price data.</p>
     </div>
     <div class="outcome">
       <div class="oc"><p class="oc-k">Retrace into the gap</p><p class="oc-v good">Filled</p><p class="oc-d">2 Sep, 15:00 &mdash; two hours after the impulse.</p></div>
@@ -347,20 +347,21 @@ footer{padding:44px 0 72px;color:var(--muted);font-size:13px}
     <div class="src">
       <div>
         <dl>
-          <dt>Instrument</dt><dd>BTCUSD · 1 hour</dd>
-          <dt>Platform</dt><dd>TradingView</dd>
-          <dt>Chart creator</dt><dd>ict_smc_chartist</dd>
-          <dt>Snapshot</dt><dd>2 Sep 2025, 13:49 UTC</dd>
+          <dt>Instrument</dt><dd>BTC-USD · 1 hour</dd>
+          <dt>Price data</dt><dd>Yahoo Finance</dd>
+          <dt>Window</dt><dd>28 Aug – 3 Sep 2025</dd>
+          <dt>Compiled by</dt><dd>bhurtelmahesh</dd>
         </dl>
       </div>
       <div class="caveat">
-        <p>The annotations explain the SMC / ICT reading of what is visible on the chart. They are <strong>not</strong> evidence that those labels correspond to real institutional orders — no retail chart can show that.</p>
+        <p>Every candle in Part Two is real BTC-USD hourly data, drawn from the price series rather than traced from a screenshot. The levels were derived from those bars, so anything here can be checked against the data.</p>
+        <p>The annotations explain the SMC / ICT reading of what the chart did. They are <strong>not</strong> evidence that those labels correspond to real institutional orders — no retail chart can show that.</p>
         <p>This is educational material about chart-reading conventions. It is not financial, investment, or trading advice. Markets carry risk of loss, and any decision you make is your own.</p>
       </div>
     </div>
   </section>
 
-  <footer>${HOSTED ? '<p style="margin:0 0 10px"><a href="./">&larr; Back to TrendLens</a></p>' : ''}Compiled from two source decks — a 15-concept visual reference and a real-chart trade walkthrough — redrawn, regrouped and merged into one guide.</footer>
+  <footer>${HOSTED ? '<a href="./">&larr; Back to TrendLens</a>' : ''}</footer>
 </div>
 
 ${HOSTED ? '<script src="./guide-assets/guide.js"></script>' : `<script>

@@ -308,7 +308,7 @@ footer(doc, FOOT_L, pageNo());
 page(doc);
 doc.font('Helvetica-Bold').fontSize(28).fillColor(C.text).text('What happened next', 54, 44);
 doc.font('Helvetica').fontSize(11).fillColor(C.muted)
-   .text('The original snapshot was taken at 13:49, inside the displacement candle \u2014 so the entry, stop and target were projections, not history. Here is how it actually resolved, from the same price data.',
+   .text('The setup is read at the displacement candle on 2 September, so the entry, stop and target are forward-looking from that moment \u2014 not history. Here is how it actually resolved, from the same price data.',
          54, 84, { width: 700, lineGap: 3.5 });
 const OC = [
   ['Retrace into the gap', 'Filled', '2 Sep, 15:00 \u2014 two hours after the impulse.', C.up],
@@ -357,9 +357,9 @@ footer(doc, FOOT_L, pageNo());
 page(doc);
 doc.font('Helvetica-Bold').fontSize(28).fillColor(C.text).text('Source and caveats', 54, 44);
 panel(doc, 54, 100, 400, 180, { fill: C.panel });
-eyebrow(doc, 76, 122, 'Chart source', C.blue);
-[['Instrument', 'BTCUSD · 1 hour'], ['Platform', 'TradingView snapshot'],
- ['Chart creator', 'ict_smc_chartist'], ['Timestamp', '2 Sep 2025, 13:49 UTC']]
+eyebrow(doc, 76, 122, 'Where this comes from', C.blue);
+[['Instrument', 'BTC-USD · 1 hour'], ['Price data', 'Yahoo Finance'],
+ ['Window', '28 Aug – 3 Sep 2025'], ['Compiled by', 'bhurtelmahesh']]
   .forEach(([k, v], i) => {
     const y = 148 + i * 30;
     doc.font('Helvetica').fontSize(10).fillColor(C.muted).text(k, 76, y, { width: 110, lineBreak: false });
@@ -369,7 +369,7 @@ eyebrow(doc, 76, 122, 'Chart source', C.blue);
 panel(doc, 480, 100, 426, 180, { fill: C.panel });
 eyebrow(doc, 502, 122, 'What the annotations are', C.accent);
 doc.font('Helvetica').fontSize(10.2).fillColor(C.text)
-   .text('The labels explain the SMC / ICT interpretation of what is visible on the chart. They are not proof that those labels correspond to real institutional orders — no retail chart can show that.',
+   .text('Every candle in Part Two is real BTC-USD hourly data, drawn from the price series rather than traced from a screenshot. The labels explain the SMC / ICT reading of what the chart did; they are not proof those labels correspond to real institutional orders.',
          502, 144, { width: 382, lineGap: 3.5 });
 doc.font('Helvetica').fontSize(10.2).fillColor(C.muted)
    .text('Use the setup as a framework to test against your own data, not as a signal.', 502, 232, { width: 382, lineGap: 3.5 });
@@ -379,8 +379,6 @@ eyebrow(doc, 76, 326, 'Disclaimer', C.down);
 doc.font('Helvetica').fontSize(10.2).fillColor(C.text)
    .text('This document is educational material about chart-reading conventions. It is not financial, investment, or trading advice, and nothing in it is a recommendation or a prediction. Markets carry risk of loss. Any decision you make is your own responsibility.',
          76, 346, { width: W - 152, lineGap: 4 });
-doc.font('Helvetica').fontSize(9.5).fillColor(C.dim)
-   .text('Compiled from two source decks: a 15-concept visual reference and a real-chart trade walkthrough.', 54, 448, { width: 700 });
 footer(doc, FOOT_L, pageNo());
 
 
