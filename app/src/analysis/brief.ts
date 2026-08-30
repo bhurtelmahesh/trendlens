@@ -1,4 +1,4 @@
-import type { AnalysisResult } from '../../../shared/types';
+import type { AnalysisResult, Candle } from '../../../shared/types';
 
 export type ReferenceTone = 'aligned' | 'neutral' | 'against';
 
@@ -34,6 +34,24 @@ const STRUCTURE_PHRASE: Record<AnalysisResult['structure'], string> = {
   'lower-highs-lower-lows': 'lower swing highs and lower swing lows',
   mixed: 'swing highs and lows that are not consistently rising or falling',
 };
+
+/**
+ * Whether a reference price is close enough to the plotted bars to draw on the
+ * chart. One band of slack either side keeps a near-miss visible; beyond that
+ * the line would squash the candles into a sliver. The chart and the brief both
+ * call this, so they can never disagree about whether the line is shown.
+ */
+export function refOnChart(refPrice: number, candles: Candle[]): boolean {
+  if (!Number.isFinite(refPrice) || candles.length === 0) return false;
+  let low = Infinity;
+  let high = -Infinity;
+  for (const c of candles) {
+    if (c.low < low) low = c.low;
+    if (c.high > high) high = c.high;
+  }
+  const band = high - low || Math.abs(high) * 0.02 || 1;
+  return refPrice >= low - band && refPrice <= high + band;
+}
 
 /**
  * Where a reference price sits versus the current structure, and whether the

@@ -32,8 +32,9 @@ jobs:
         run: npm run build
       - name: Check
         run: |
-          npm --workspace app run test
-          npm --workspace app run lint
+          npm test
+          npm run typecheck
+          npm run lint
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

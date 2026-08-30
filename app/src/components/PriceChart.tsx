@@ -8,7 +8,7 @@ import {
   type UTCTimestamp,
 } from 'lightweight-charts';
 import type { AnalysisResult, Candle } from '../../../shared/types';
-import { describeReference } from '../analysis/brief';
+import { describeReference, refOnChart } from '../analysis/brief';
 import { ema, emaPeriodFor } from '../analysis/ema';
 
 interface Props {
@@ -61,12 +61,29 @@ export function PriceChart({ candles, analysis, refPrice }: Props) {
     ro.observe(host);
     resize();
 
+    // Decided up front: the price scale has to make room for the reference
+    // line, or a line just outside the bars' own range is silently clipped.
+    const drawRef = refPrice !== undefined && refOnChart(refPrice, candles);
+
     const candleSeries = chart.addSeries(CandlestickSeries, {
       upColor: UP,
       downColor: DOWN,
       borderVisible: false,
       wickUpColor: UP,
       wickDownColor: DOWN,
+      autoscaleInfoProvider: drawRef
+        ? (original: () => { priceRange: { minValue: number; maxValue: number } | null } | null) => {
+            const res = original();
+            if (!res?.priceRange) return res;
+            return {
+              ...res,
+              priceRange: {
+                minValue: Math.min(res.priceRange.minValue, refPrice),
+                maxValue: Math.max(res.priceRange.maxValue, refPrice),
+              },
+            };
+          }
+        : undefined,
     });
     candleSeries.setData(
       candles.map((c) => ({
@@ -107,14 +124,7 @@ export function PriceChart({ candles, analysis, refPrice }: Props) {
       title: 'swing low',
     });
 
-    const lows = candles.map((c) => c.low);
-    const highs = candles.map((c) => c.high);
-    if (
-      refPrice !== undefined &&
-      Number.isFinite(refPrice) &&
-      refPrice >= Math.min(...lows) &&
-      refPrice <= Math.max(...highs)
-    ) {
+    if (drawRef) {
       const tone = describeReference(analysis, refPrice)?.tone ?? 'neutral';
       candleSeries.createPriceLine({
         price: refPrice,

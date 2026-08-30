@@ -1,16 +1,20 @@
 import { useCallback, useState } from 'react';
-import type { AnalysisResult, CandlesResponse, Interval, Market } from '../../shared/types';
-import { analyzeCandles } from './analysis/analyze';
+import type { AnalysisResult, Candle, CandlesResponse, Interval, Market } from '../../shared/types';
+import { analyzeCandles, usableCandles } from './analysis/analyze';
 import { Brief } from './components/Brief';
+import { EntryZones } from './components/EntryZones';
 import { HonestyPanel } from './components/HonestyPanel';
 import { Legal } from './components/Legal';
 import { PriceChart } from './components/PriceChart';
 import { TickerForm } from './components/TickerForm';
 import { ApiRequestError, fetchCandles } from './lib/api';
+import { nepseName } from './lib/nepse';
 import './styles.css';
 
 interface Loaded {
   data: CandlesResponse;
+  /** The bars the analysis actually measured — what the chart plots too. */
+  candles: Candle[];
   analysis: AnalysisResult;
   refPrice?: number;
 }
@@ -26,8 +30,14 @@ export default function App() {
       setError(null);
       try {
         const data = await fetchCandles(symbol, market, interval);
-        const analysis = analyzeCandles(data.candles);
-        setLoaded({ data, analysis, refPrice });
+        // merolagani's feed carries no company name; fill it from the bundled list.
+        if (data.meta.market === 'nepse' && !data.meta.name) {
+          data.meta.name = nepseName(data.meta.symbol);
+        }
+        // Filter once, so the chart plots exactly what the analysis measured.
+        const candles = usableCandles(data.candles);
+        const analysis = analyzeCandles(candles);
+        setLoaded({ data, candles, analysis, refPrice });
       } catch (err) {
         setLoaded(null);
         setError(
@@ -62,11 +72,17 @@ export default function App() {
       {loaded ? (
         <main className="result">
           <PriceChart
-            candles={loaded.data.candles}
+            candles={loaded.candles}
             analysis={loaded.analysis}
             refPrice={loaded.refPrice}
           />
-          <Brief meta={loaded.data.meta} analysis={loaded.analysis} refPrice={loaded.refPrice} />
+          <Brief
+            meta={loaded.data.meta}
+            candles={loaded.candles}
+            analysis={loaded.analysis}
+            refPrice={loaded.refPrice}
+          />
+          <EntryZones analysis={loaded.analysis} />
         </main>
       ) : null}
 

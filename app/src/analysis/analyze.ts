@@ -38,11 +38,19 @@ function directionFrom(
   return { direction, net, votes };
 }
 
-export function analyzeCandles(input: Candle[]): AnalysisResult {
-  // A provider can still slip in a null/zero bar (usually the forming one).
-  const candles = input.filter((c) =>
+/**
+ * Bars safe to compute on. A provider can still slip in a null/zero bar
+ * (usually the forming one), and Number(null) is 0, which isFinite() accepts.
+ * Exported so the chart plots exactly the series the analysis measured.
+ */
+export function usableCandles(input: Candle[]): Candle[] {
+  return input.filter((c) =>
     [c.open, c.high, c.low, c.close].every((v) => Number.isFinite(v) && v > 0),
   );
+}
+
+export function analyzeCandles(input: Candle[]): AnalysisResult {
+  const candles = usableCandles(input);
   const closes = candles.map((c) => c.close);
   const n = closes.length;
   if (n < 10) throw new Error('need at least 10 usable candles');

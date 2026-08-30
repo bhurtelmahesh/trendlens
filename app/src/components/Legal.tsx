@@ -48,8 +48,14 @@ export function Legal() {
               price does anything.
             </li>
             <li>
-              Market data comes from a third party (Yahoo Finance) and may be delayed, adjusted,
-              incomplete, or wrong. Verify independently before relying on it.
+              The long/short zones are <strong>geometry, not entry or exit signals</strong>: thirds
+              of the most recent swing range, plus the level that ends that structure and the far
+              side it runs to. No position, size, stop, or target is implied or recommended.
+            </li>
+            <li>
+              Market data comes from a third party (Yahoo Finance, or merolagani.com for NEPSE
+              symbols) and may be delayed, adjusted, incomplete, or wrong. Verify independently
+              before relying on it.
             </li>
             <li>
               You are solely responsible for any decision you make. The authors accept no

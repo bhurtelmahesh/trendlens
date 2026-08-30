@@ -1,14 +1,17 @@
-import type { AnalysisResult, CandlesMeta } from '../../../shared/types';
-import { toBrief } from '../analysis/brief';
+import type { AnalysisResult, CandlesMeta, Candle } from '../../../shared/types';
+import { refOnChart, toBrief } from '../analysis/brief';
 
 interface Props {
   meta: CandlesMeta;
+  candles: Candle[];
   analysis: AnalysisResult;
   refPrice?: number;
 }
 
-export function Brief({ meta, analysis, refPrice }: Props) {
+export function Brief({ meta, candles, analysis, refPrice }: Props) {
   const brief = toBrief(analysis, refPrice);
+  // Same predicate the chart uses, so the text never cites a line that isn't drawn.
+  const refDrawn = refPrice !== undefined && refOnChart(refPrice, candles);
   const dirClass = `dir dir-${analysis.direction}`;
 
   return (
@@ -50,7 +53,12 @@ export function Brief({ meta, analysis, refPrice }: Props) {
       </div>
 
       {brief.reference ? (
-        <p className={`reference reference-${brief.reference.tone}`}>{brief.reference.text}</p>
+        <p className={`reference reference-${brief.reference.tone}`}>
+          {brief.reference.text}
+          {refDrawn ? null : (
+            <span className="ref-offchart"> Too far from recent prices to mark on the chart.</span>
+          )}
+        </p>
       ) : null}
       {meta.notice ? <p className="notice">{meta.notice}</p> : null}
     </section>

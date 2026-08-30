@@ -55,6 +55,16 @@ const AS_RESULTS: SearchResult[] = NEPSE.map(([symbol, name]) => ({
   type: 'equity',
 }));
 
+/**
+ * Company name for a NEPSE symbol, or null. merolagani's chart feed carries no
+ * name, so without this the brief header reads "NABIL · 1d" while every Yahoo
+ * market shows the company.
+ */
+export function nepseName(symbol: string): string | null {
+  const s = symbol.trim().toUpperCase();
+  return NEPSE.find(([sym]) => sym === s)?.[1] ?? null;
+}
+
 export function searchNepseLocal(query: string): SearchResult[] {
   const q = query.trim().toUpperCase();
   if (q.length < 1) return AS_RESULTS.slice(0, 8);

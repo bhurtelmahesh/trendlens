@@ -14,6 +14,20 @@ interface Env {
   MARKET_RL?: { limit(opts: { key: string }): Promise<{ success: boolean }> };
 }
 
+/**
+ * Who to rate-limit as. Cloudflare always sets CF-Connecting-IP in production,
+ * so a miss means we are off-Cloudflare (the local Node dev server). Returning
+ * null there means "don't limit" — the alternative, bucketing every caller
+ * under one shared key, would throttle all traffic at 60/min collectively,
+ * turning a missing header into a self-inflicted global outage.
+ */
+export function rateLimitKey(req: Request): string | null {
+  const direct = req.headers.get('CF-Connecting-IP');
+  if (direct) return direct.trim() || null;
+  const forwarded = req.headers.get('X-Forwarded-For')?.split(',')[0]?.trim();
+  return forwarded || null;
+}
+
 // Per-isolate fallback limiter (the [[ratelimits]] binding is primary).
 const hits = new Map<string, number[]>();
 function fallbackAllowed(key: string, limit = 60, windowMs = 60_000): boolean {
@@ -55,7 +69,11 @@ export default {
   async fetch(req: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const origin = req.headers.get('Origin');
     if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: corsHeaders(origin) });
-    if (req.method !== 'GET') return withCors(fail('Method not allowed.', 405), origin);
+    // HEAD is handled like GET; the runtime drops the body on the way out.
+    // Uptime monitors and prefetchers use it, and 405ing them is just noise.
+    if (req.method !== 'GET' && req.method !== 'HEAD') {
+      return withCors(fail('Method not allowed.', 405), origin);
+    }
 
     const url = new URL(req.url);
     const isApi = url.pathname === '/api/candles' || url.pathname === '/api/search';
@@ -71,10 +89,10 @@ export default {
       if (hit) return withCors(hit, origin);
     }
 
-    // Rate limit (only on a cache miss).
-    const rlKey = req.headers.get('CF-Connecting-IP') || origin || 'anon';
-    let limited = !fallbackAllowed(rlKey);
-    if (!limited && env.MARKET_RL) {
+    // Rate limit (only on a cache miss, and only when we can identify a caller).
+    const rlKey = rateLimitKey(req);
+    let limited = rlKey !== null && !fallbackAllowed(rlKey);
+    if (!limited && rlKey !== null && env.MARKET_RL) {
       try {
         limited = !(await env.MARKET_RL.limit({ key: rlKey })).success;
       } catch {
