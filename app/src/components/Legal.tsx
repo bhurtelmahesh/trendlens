@@ -27,11 +27,12 @@ export function Legal() {
           <h3>Privacy</h3>
           <p>
             TrendLens has no accounts, sets no cookies, and runs no analytics or trackers. Nothing
-            you enter is stored. The only request the app makes is to its own market-data proxy
-            (<code>trendlens-api.chartlens101.workers.dev</code>): the ticker, market, and interval
-            you choose are sent there and forwarded to Yahoo Finance to fetch prices. Cloudflare
-            may keep short-lived request logs (IP, timestamp, path) for abuse prevention. No
-            personal data is collected, sold, or shared.
+            you enter is stored. The only request the app makes is to its own market-data proxy (a
+            Cloudflare Worker at <code>trendlens-api.chartlens101.workers.dev</code>): the ticker,
+            market, and interval you choose are sent there and forwarded to a third-party
+            market-data provider &mdash; Yahoo Finance, or merolagani.com for NEPSE symbols &mdash;
+            to fetch prices. Cloudflare may keep short-lived request logs (IP, timestamp, path) for
+            abuse prevention. No personal data is collected, sold, or shared.
           </p>
 
           <h3>Terms &amp; disclaimer</h3>
