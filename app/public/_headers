@@ -9,3 +9,9 @@
 
 /
   Cache-Control: no-cache
+
+/guide.html
+  Cache-Control: no-cache
+
+/guide
+  Cache-Control: no-cache

@@ -649,3 +649,10 @@ a.linklike {
 .tutorial-cta:hover small {
   color: var(--bg);
 }
+
+/* The footer's text link was a 21px-tall tap target on mobile. Padding lifts it
+   past the ~44px guideline without changing how it reads; the same class is used
+   for the dialog's Close button, which must stay compact, so this is scoped. */
+.footer > .linklike {
+  padding: 12px 14px;
+}
