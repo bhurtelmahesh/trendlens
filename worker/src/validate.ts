@@ -1,7 +1,7 @@
 import type { Interval, Market } from '../../shared/types';
 
 export const INTERVALS: Interval[] = ['1h', '1d', '1wk'];
-export const MARKETS: Market[] = ['us', 'crypto', 'global'];
+export const MARKETS: Market[] = ['us', 'crypto', 'global', 'nepse'];
 const MAX_SYMBOL_LEN = 24;
 
 export interface ParsedCandlesQuery {

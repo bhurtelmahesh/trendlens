@@ -5,6 +5,7 @@ import type {
   SearchResponse,
 } from '../../shared/types';
 import { corsHeaders } from './cors';
+import { getNepseCandles } from './providers/merolagani';
 import { searchSymbols } from './providers/search';
 import { getCandles } from './providers/yahoo';
 import { parseCandlesQuery } from './validate';
@@ -103,8 +104,11 @@ export default {
     if (typeof parsed === 'string') return withCors(fail(parsed, 400), origin);
 
     try {
-      const data = await getCandles(parsed.symbol, parsed.market, parsed.interval);
-      const res = ok(data, CANDLES_TTL[parsed.interval]);
+      const data =
+        parsed.market === 'nepse'
+          ? await getNepseCandles(parsed.symbol)
+          : await getCandles(parsed.symbol, parsed.market, parsed.interval);
+      const res = ok(data, CANDLES_TTL[data.meta.interval]);
       if (cache) {
         ctx.waitUntil(cache.put(keyFor(), res.clone()));
         ctx.waitUntil(

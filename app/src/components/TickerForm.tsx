@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import type { Interval, Market, SearchResult } from '../../../shared/types';
 import { peekSearch, searchSymbols } from '../lib/api';
+import { searchNepseLocal } from '../lib/nepse';
 
 interface Props {
   busy: boolean;
@@ -11,6 +12,7 @@ const EXAMPLES: Record<Market, string> = {
   us: 'AAPL, MSFT, NVDA',
   crypto: 'BTC, ETH, SOL',
   global: '7203.T, SAP.DE, BP.L',
+  nepse: 'NABIL, UPPER, NRIC',
 };
 
 export function TickerForm({ busy, onSubmit }: Props) {
@@ -24,13 +26,24 @@ export function TickerForm({ busy, onSubmit }: Props) {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(-1);
   const justPicked = useRef(false);
+  const nepse = market === 'nepse';
 
-  // Symbol search: paint a cached guess immediately, then a short debounced fetch.
+  // Symbol search. NEPSE uses a bundled local list; everything else hits the
+  // proxy — painting a cached guess first, then a short debounced fetch.
   useEffect(() => {
     if (justPicked.current) {
       justPicked.current = false;
       return;
     }
+
+    if (nepse) {
+      const local = searchNepseLocal(symbol);
+      setResults(local);
+      setActive(-1);
+      setOpen(local.length > 0 && symbol.trim().length > 0);
+      return;
+    }
+
     if (symbol.trim().length < 2) {
       setResults([]);
       return;
@@ -55,12 +68,13 @@ export function TickerForm({ busy, onSubmit }: Props) {
       clearTimeout(t);
       ctrl.abort();
     };
-  }, [symbol]);
+  }, [symbol, nepse]);
 
   function pick(r: SearchResult) {
     justPicked.current = true;
     setSymbol(r.symbol);
     setMarket(r.market);
+    if (r.market === 'nepse') setInterval('1d');
     setOpen(false);
     setResults([]);
   }
@@ -68,8 +82,9 @@ export function TickerForm({ busy, onSubmit }: Props) {
   function submit(sym: string, mkt: Market) {
     const s = sym.trim().toUpperCase();
     if (!s || busy) return;
+    const iv: Interval = mkt === 'nepse' ? '1d' : interval;
     const ref = Number.parseFloat(refPrice);
-    onSubmit(s, mkt, interval, Number.isFinite(ref) && ref > 0 ? ref : undefined);
+    onSubmit(s, mkt, iv, Number.isFinite(ref) && ref > 0 ? ref : undefined);
   }
 
   const optionId = (i: number) => `${listId}-opt-${i}`;
@@ -148,16 +163,29 @@ export function TickerForm({ busy, onSubmit }: Props) {
 
       <label className="field">
         <span>Market</span>
-        <select value={market} onChange={(e) => setMarket(e.target.value as Market)}>
+        <select
+          value={market}
+          onChange={(e) => {
+            const m = e.target.value as Market;
+            setMarket(m);
+            if (m === 'nepse') setInterval('1d');
+          }}
+        >
           <option value="us">US stocks</option>
           <option value="crypto">Crypto</option>
           <option value="global">Other global</option>
+          <option value="nepse">NEPSE (Nepal)</option>
         </select>
       </label>
 
       <label className="field">
         <span>Interval</span>
-        <select value={interval} onChange={(e) => setInterval(e.target.value as Interval)}>
+        <select
+          value={interval}
+          disabled={nepse}
+          title={nepse ? 'NEPSE data is daily only' : undefined}
+          onChange={(e) => setInterval(e.target.value as Interval)}
+        >
           <option value="1h">1 hour</option>
           <option value="1d">1 day</option>
           <option value="1wk">1 week</option>
@@ -184,7 +212,10 @@ export function TickerForm({ busy, onSubmit }: Props) {
         {busy ? 'Reading…' : 'Read the structure'}
       </button>
       <p className="hint">
-        Start typing to search, or enter the exact symbol. Examples for {market}: {EXAMPLES[market]}.
+        {nepse
+          ? 'NEPSE support is experimental — unofficial daily data via merolagani. '
+          : 'Start typing to search, or enter the exact symbol. '}
+        Examples for {market}: {EXAMPLES[market]}.
       </p>
     </form>
   );

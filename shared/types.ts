@@ -10,7 +10,7 @@ export interface Candle {
   volume: number;
 }
 
-export type Market = 'us' | 'crypto' | 'global';
+export type Market = 'us' | 'crypto' | 'global' | 'nepse';
 export type Interval = '1h' | '1d' | '1wk';
 
 export interface CandlesRequest {
@@ -24,7 +24,7 @@ export interface CandlesMeta {
   name: string | null;
   market: Market;
   interval: Interval;
-  provider: 'yahoo';
+  provider: 'yahoo' | 'merolagani';
   /** Set when the data is stale, adjusted, or otherwise caveated. */
   notice?: string;
 }
