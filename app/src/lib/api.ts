@@ -35,15 +35,47 @@ export async function fetchCandles(
   }
 }
 
+// In-memory autocomplete cache. Re-typing or backspacing a query you've already
+// searched is then instant instead of another ~200ms round trip.
+const searchCache = new Map<string, SearchResult[]>();
+
+/**
+ * A synchronous best guess for `query`: an exact cache hit, or the longest
+ * cached prefix filtered down. Lets the dropdown paint immediately while the
+ * real request is in flight.
+ */
+export function peekSearch(query: string): SearchResult[] | undefined {
+  const q = query.trim().toLowerCase();
+  if (q.length < 2) return undefined;
+  const exact = searchCache.get(q);
+  if (exact) return exact;
+  for (let i = q.length - 1; i >= 2; i--) {
+    const pre = searchCache.get(q.slice(0, i));
+    if (pre) {
+      return pre.filter(
+        (r) => r.symbol.toLowerCase().startsWith(q) || r.name.toLowerCase().includes(q),
+      );
+    }
+  }
+  return undefined;
+}
+
 /** Best-effort symbol search for autocomplete. Returns [] on any problem. */
 export async function searchSymbols(query: string, signal?: AbortSignal): Promise<SearchResult[]> {
-  if (query.trim().length < 2) return [];
+  const q = query.trim();
+  if (q.length < 2) return [];
+  const key = q.toLowerCase();
+  const cached = searchCache.get(key);
+  if (cached) return cached;
   try {
-    const res = await fetch(`${API_BASE}/api/search?q=${encodeURIComponent(query.trim())}`, { signal });
-    if (!res.ok) return [];
+    const res = await fetch(`${API_BASE}/api/search?q=${encodeURIComponent(q)}`, { signal });
+    if (!res.ok) return peekSearch(q) ?? [];
     const body = (await res.json()) as { results?: SearchResult[] };
-    return body.results ?? [];
+    const results = body.results ?? [];
+    searchCache.set(key, results);
+    if (searchCache.size > 150) searchCache.delete(searchCache.keys().next().value as string);
+    return results;
   } catch {
-    return [];
+    return peekSearch(q) ?? [];
   }
 }

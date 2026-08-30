@@ -27,7 +27,7 @@ function fallbackAllowed(key: string, limit = 60, windowMs = 60_000): boolean {
 // Candle history barely changes intraday, so cache it hard. A day-old "backup"
 // copy is kept separately and served if the live feed is rate-limited.
 const CANDLES_TTL: Record<Interval, number> = { '1h': 120, '1d': 900, '1wk': 3600 };
-const SEARCH_TTL = 600;
+const SEARCH_TTL = 3600;
 const BACKUP_TTL = 86_400;
 
 function jsonResponse(body: unknown, status: number, cacheControl: string): Response {

@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import type { Interval, Market, SearchResult } from '../../../shared/types';
-import { searchSymbols } from '../lib/api';
+import { peekSearch, searchSymbols } from '../lib/api';
 
 interface Props {
   busy: boolean;
@@ -25,7 +25,7 @@ export function TickerForm({ busy, onSubmit }: Props) {
   const [active, setActive] = useState(-1);
   const justPicked = useRef(false);
 
-  // Debounced symbol search.
+  // Symbol search: paint a cached guess immediately, then a short debounced fetch.
   useEffect(() => {
     if (justPicked.current) {
       justPicked.current = false;
@@ -35,13 +35,22 @@ export function TickerForm({ busy, onSubmit }: Props) {
       setResults([]);
       return;
     }
+
+    const guess = peekSearch(symbol);
+    if (guess && guess.length) {
+      setResults(guess);
+      setActive(-1);
+      setOpen(true);
+    }
+
     const ctrl = new AbortController();
     const t = setTimeout(async () => {
       const found = await searchSymbols(symbol, ctrl.signal);
+      if (ctrl.signal.aborted) return;
       setResults(found);
       setActive(-1);
       if (found.length) setOpen(true);
-    }, 250);
+    }, 120);
     return () => {
       clearTimeout(t);
       ctrl.abort();
