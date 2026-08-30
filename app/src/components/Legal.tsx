@@ -6,14 +6,14 @@ export function Legal() {
   return (
     <footer className="footer">
       <span>TrendLens &mdash; a mechanical read, not advice.</span>
+      <button type="button" className="linklike" onClick={() => dialogRef.current?.showModal()}>
+        Privacy &amp; terms
+      </button>
       {/* BASE_URL-aware: the GitHub Pages copy is served under /trendlens/. */}
       <a className="tutorial-cta" href={`${import.meta.env.BASE_URL}guide.html`}>
         <span>Tutorial</span>
         <small>Learn what swing structure and break-of-structure mean</small>
       </a>
-      <button type="button" className="linklike" onClick={() => dialogRef.current?.showModal()}>
-        Privacy &amp; terms
-      </button>
 
       <dialog ref={dialogRef} className="legal-dialog" aria-labelledby="legal-title">
         <div className="legal-body">

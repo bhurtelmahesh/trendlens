@@ -395,8 +395,9 @@ body {
 .footer {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 8px;
+  align-items: center;
+  text-align: center;
+  gap: 10px;
   border-top: 1px solid var(--line);
   padding-top: 20px;
   font-size: 13px;
@@ -619,7 +620,9 @@ a.linklike {
 .tutorial-cta {
   display: inline-flex;
   flex-direction: column;
+  align-items: center;
   gap: 2px;
+  margin-top: 4px;
   padding: 11px 16px;
   border: 1px solid var(--accent);
   border-radius: 8px;

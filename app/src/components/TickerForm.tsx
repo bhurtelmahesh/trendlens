@@ -17,7 +17,7 @@ const EXAMPLES: Record<Market, string> = {
 
 export function TickerForm({ busy, onSubmit }: Props) {
   const listId = useId();
-  const [symbol, setSymbol] = useState('AAPL');
+  const [symbol, setSymbol] = useState('');
   const [market, setMarket] = useState<Market>('us');
   const [interval, setInterval] = useState<Interval>('1d');
   const [refPrice, setRefPrice] = useState('');
@@ -208,7 +208,7 @@ export function TickerForm({ busy, onSubmit }: Props) {
         />
       </label>
 
-      <button type="submit" disabled={busy}>
+      <button type="submit" disabled={busy || !symbol.trim()}>
         {busy ? 'Reading…' : 'Read the structure'}
       </button>
       <p className="hint">
