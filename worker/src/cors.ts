@@ -3,6 +3,8 @@
 const ALLOWED = new Set([
   'https://trendlens.pages.dev',
   'https://bhurtelmahesh.github.io',
+  'https://trendlens.web.app',
+  'https://trendlens.firebaseapp.com',
   'https://chartlens101.web.app',
   'https://chartlens101.firebaseapp.com',
   'http://localhost:5173',

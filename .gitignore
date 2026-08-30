@@ -7,3 +7,5 @@ dist/
 app/dist/
 worker/dist/
 *.tsbuildinfo
+
+.firebase/
