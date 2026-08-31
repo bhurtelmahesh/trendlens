@@ -12,7 +12,7 @@
     "dev:worker": "npm --workspace worker run dev",
     "build": "npm --workspace app run build",
     "test": "npm --workspace app run test && npm --workspace worker run test",
-    "typecheck": "npm --workspace app exec tsc --noEmit && npm --workspace worker exec tsc --noEmit",
+    "typecheck": "npm --workspace app exec tsc -- -b --noEmit && npm --workspace worker exec tsc --noEmit",
     "lint": "npm --workspace app run lint"
   }
 }

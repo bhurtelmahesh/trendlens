@@ -1,5 +1,10 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 import { ApiRequestError, fetchCandles, peekSearch, searchSymbols } from './api';
+
+// Module-level spies keep their call history between tests, so a
+// "never called" assertion would pass only in the declared order and
+// fail under --sequence.shuffle.
+beforeEach(() => vi.clearAllMocks());
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
