@@ -50,12 +50,23 @@ const CANDLES_TTL: Record<Interval, number> = {
   '1wk': 3600,
 };
 
-// A day-old copy is a reasonable fallback for a daily chart and nonsense for a
-// one-minute one, so intraday intervals get no backup rather than a stale one
-// presented as current.
-const NO_BACKUP: ReadonlySet<Interval> = new Set<Interval>(['1m', '5m']);
+/**
+ * How old a fallback copy may be before it is worse than an error, per interval.
+ * Yahoo rate-limits bursts and recovers within moments; without a fallback a
+ * single 429 is a dead end. A day-old daily chart is a reasonable stand-in, a
+ * day-old one-minute chart is not — but a few minutes old is fine, and far
+ * better than failing.
+ */
+const BACKUP_MAX_AGE: Record<Interval, number> = {
+  '1m': 600,
+  '5m': 1_800,
+  '1h': 21_600,
+  '1d': 86_400,
+  '1wk': 86_400,
+};
+/** Header stamped on the fallback copy so its age can be reported honestly. */
+const FETCHED_AT = 'X-Fetched-At';
 const SEARCH_TTL = 3600;
-const BACKUP_TTL = 86_400;
 
 function jsonResponse(body: unknown, status: number, cacheControl: string): Response {
   return new Response(JSON.stringify(body), {
@@ -141,30 +152,41 @@ export default {
       const res = ok(data, CANDLES_TTL[data.meta.interval]);
       if (cache) {
         ctx.waitUntil(cache.put(keyFor(), res.clone()));
-        if (!NO_BACKUP.has(data.meta.interval)) {
-          ctx.waitUntil(
-            cache.put(
-              keyFor('&_b=1'),
-              jsonResponse(data, 200, `public, max-age=${BACKUP_TTL}`),
-            ),
-          );
-        }
+        const backup = jsonResponse(
+          data,
+          200,
+          `public, max-age=${BACKUP_MAX_AGE[data.meta.interval]}`,
+        );
+        backup.headers.set(FETCHED_AT, String(Date.now()));
+        ctx.waitUntil(cache.put(keyFor('&_b=1'), backup));
       }
       return withCors(res, origin);
     } catch (err) {
-      // Live feed failed (usually a Yahoo 429). Serve the day-old backup if we
-      // have one — but never for an intraday interval, where day-old bars would
-      // be presented as the current chart.
-      if (cache && !NO_BACKUP.has(parsed.interval)) {
+      // Live feed failed — usually a Yahoo 429, which clears in moments. Serve
+      // the last good copy if it is still recent enough for this interval, and
+      // say exactly how old it is rather than implying it is current.
+      if (cache) {
         const backup = await cache.match(keyFor('&_b=1'));
         if (backup) {
           const body = (await backup.json()) as CandlesResponse;
-          body.meta.notice = 'The live feed is busy — showing the most recent cached data (up to a day old).';
-          return withCors(ok(body, 120), origin);
+          const stamp = Number(backup.headers.get(FETCHED_AT) ?? 0);
+          const ageSec = stamp > 0 ? Math.round((Date.now() - stamp) / 1000) : null;
+          const age =
+            ageSec === null
+              ? 'a moment'
+              : ageSec < 90
+                ? `${ageSec} seconds`
+                : `${Math.round(ageSec / 60)} minutes`;
+          body.meta.notice = `The live feed is busy — this is the last good copy, fetched ${age} ago.`;
+          return withCors(ok(body, 60), origin);
         }
       }
-      const message = err instanceof Error ? err.message : 'Market data lookup failed.';
-      return withCors(fail(`Couldn't load ${parsed.symbol}: ${message}`, 502), origin);
+      const raw = err instanceof Error ? err.message : 'Market data lookup failed.';
+      // "provider returned 429" is accurate and tells a reader nothing.
+      const message = /\b429\b/.test(raw)
+        ? `The market-data provider is rate-limiting requests right now. Try ${parsed.symbol} again in a few seconds.`
+        : `Couldn't load ${parsed.symbol}: ${raw}`;
+      return withCors(fail(message, 502), origin);
     }
   },
 };

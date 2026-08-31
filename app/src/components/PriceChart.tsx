@@ -31,6 +31,41 @@ const REF_TONE_COLOR = { aligned: '#4bbf73', neutral: '#e0a52b', against: '#e553
 const DEFAULT_VISIBLE_BARS = 130;
 
 /**
+ * lightweight-charts renders a UTCTimestamp in UTC. Bars are stored in UTC —
+ * which is right — but a reader comparing a 1-minute chart against their own
+ * clock needs their own time, and being hours out is invisible on a daily chart
+ * and badly misleading on an intraday one. The data stays UTC; only the labels
+ * are localised.
+ */
+const localTime = (secs: number, opts: Intl.DateTimeFormatOptions) =>
+  new Date(secs * 1000).toLocaleString(undefined, opts);
+
+/** Axis ticks: lightweight-charts asks for a different grain per zoom level. */
+function tickLabel(time: number, tickMarkType: number): string {
+  switch (tickMarkType) {
+    case 0: // year
+      return localTime(time, { year: 'numeric' });
+    case 1: // month
+      return localTime(time, { month: 'short' });
+    case 2: // day of month
+      return localTime(time, { day: 'numeric', month: 'short' });
+    case 4: // time with seconds
+      return localTime(time, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    default: // time
+      return localTime(time, { hour: '2-digit', minute: '2-digit' });
+  }
+}
+
+/** The viewer's zone, named, so the axis is not silently ambiguous. */
+function zoneLabel(): string {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || 'local time';
+  } catch {
+    return 'local time';
+  }
+}
+
+/**
  * Candles + EMA line + swing-high/low price lines (and an optional reference
  * line). Levels use `createPriceLine({ price })`, so they sit at the exact
  * value the brief reports — no screen-space positioning to drift.
@@ -48,7 +83,19 @@ export function PriceChart({ candles, analysis, refPrice }: Props) {
       layout: { background: { color: 'transparent' }, textColor: TEXT, fontFamily: 'inherit' },
       grid: { vertLines: { color: GRID }, horzLines: { color: GRID } },
       rightPriceScale: { borderColor: GRID },
-      timeScale: { borderColor: GRID, timeVisible: true },
+      timeScale: {
+        borderColor: GRID,
+        timeVisible: true,
+        tickMarkFormatter: (time: number, tickMarkType: number) => tickLabel(time, tickMarkType),
+      },
+      localization: {
+        // The crosshair readout, which is where an exact time actually matters.
+        timeFormatter: (time: number) =>
+          localTime(time, {
+            year: 'numeric', month: 'short', day: 'numeric',
+            hour: '2-digit', minute: '2-digit',
+          }),
+      },
       crosshair: { mode: 0 },
     });
 
@@ -148,11 +195,14 @@ export function PriceChart({ candles, analysis, refPrice }: Props) {
   }, [candles, analysis, refPrice]);
 
   return (
-    <div
-      className="chart"
-      ref={hostRef}
-      role="img"
-      aria-label={`Price chart: EMA line and swing levels for ${analysis.candleCount} bars`}
-    />
+    <>
+      <div
+        className="chart"
+        ref={hostRef}
+        role="img"
+        aria-label={`Price chart: EMA line and swing levels for ${analysis.candleCount} bars`}
+      />
+      <p className="chart-tz">Times shown in {zoneLabel()}.</p>
+    </>
   );
 }

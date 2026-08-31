@@ -797,3 +797,10 @@ a.linklike {
   .smc-item { grid-template-columns: 1fr; gap: 8px; }
   .smc-tag { justify-self: start; }
 }
+
+.chart-tz {
+  margin: -10px 0 0;
+  font-size: 11.5px;
+  color: var(--muted);
+  text-align: right;
+}
