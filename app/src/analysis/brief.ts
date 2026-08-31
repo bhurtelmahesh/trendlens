@@ -7,8 +7,16 @@ export interface ReferenceRead {
   tone: ReferenceTone;
 }
 
+export interface ConfidenceRead {
+  /** Short label under the number — says what the score is about. */
+  label: string;
+  /** One sentence naming what a high score would mean here. */
+  meaning: string;
+}
+
 export interface Brief {
   headline: string;
+  confidence: ConfidenceRead;
   summary: string;
   observations: string[];
   ifItHolds: string;
@@ -124,6 +132,28 @@ export function describeReference(r: AnalysisResult, refPrice: number): Referenc
   };
 }
 
+/**
+ * The score means two different things depending on the verdict: for a trend it
+ * is how strongly the inputs agree that the trend is real, and for "no clean
+ * trend" it is how strongly they agree there is *no* direction. One bare
+ * "confidence" label over both reads as a claim about nothing in particular —
+ * "No clean trend, 65, moderate confidence" invites the question "confident of
+ * what?".
+ */
+function confidenceRead(direction: AnalysisResult['direction']): ConfidenceRead {
+  return direction === 'range'
+    ? {
+        label: 'no-trend confidence',
+        meaning:
+          'How strongly the EMA slope, swing structure and linear fit agree that there is no direction here. A high number means the absence of a trend is clear — not that anything is about to happen.',
+      }
+    : {
+        label: 'trend confidence',
+        meaning:
+          'How strongly the EMA slope, swing structure and break-of-structure agree with each other. It is an agreement score, not a probability that price continues.',
+      };
+}
+
 /** Turn the numeric result into plain, non-advice language. */
 export function toBrief(r: AnalysisResult, refPrice?: number, interval?: Interval): Brief {
   const hi = money(r.lastSwingHigh.price);
@@ -179,6 +209,7 @@ export function toBrief(r: AnalysisResult, refPrice?: number, interval?: Interva
 
   return {
     headline,
+    confidence: confidenceRead(r.direction),
     summary,
     observations,
     ifItHolds,

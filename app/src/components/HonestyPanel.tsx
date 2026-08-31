@@ -12,8 +12,7 @@ export function HonestyPanel() {
       <div>
         <h3>What this isn&rsquo;t</h3>
         <p>
-          Not advice, not a prediction, not a signal. The confidence figure is how strongly those
-          three inputs agree with each other &mdash; not a probability that price goes anywhere.
+          Not advice, not a prediction, not a signal. The confidence figure is an agreement score between the inputs — and it is about whichever verdict is shown, so on a &ldquo;no clean trend&rdquo; read it measures how clearly there is no direction, not how likely a move is.
           Market data can be delayed, adjusted, or wrong. Decide for yourself.
         </p>
       </div>

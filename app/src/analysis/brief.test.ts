@@ -67,6 +67,16 @@ describe('describeReference', () => {
   });
 
 describe('toBrief', () => {
+  it('says what the confidence score is about, per verdict', () => {
+    // The same number means different things: agreement that a trend is real,
+    // versus agreement that there is no direction at all.
+    expect(toBrief(up).confidence.label).toBe('trend confidence');
+    expect(toBrief(range).confidence.label).toBe('no-trend confidence');
+    expect(toBrief(range).confidence.meaning).toMatch(/no direction/i);
+    expect(toBrief(range).confidence.meaning).not.toMatch(/probability that price continues/i);
+    expect(toBrief(up).confidence.meaning).toMatch(/agreement score/i);
+  });
+
   it('omits the reference when no price is given', () => {
     expect(toBrief(up).reference).toBeUndefined();
   });

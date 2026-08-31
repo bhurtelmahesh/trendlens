@@ -26,10 +26,10 @@ export function Brief({ meta, candles, analysis, refPrice }: Props) {
           </h2>
           <p className={dirClass}>{brief.headline}</p>
         </div>
-        <div className="confidence" title="An agreement score across EMA slope, swing structure and break-of-structure. Not a probability.">
+        <div className="confidence" title={brief.confidence.meaning}>
           <span className="conf-num">{analysis.confidence}</span>
           <span className={`conf-band band-${analysis.band.toLowerCase()}`}>{analysis.band}</span>
-          <span className="conf-label">confidence</span>
+          <span className="conf-label">{brief.confidence.label}</span>
         </div>
       </header>
 
