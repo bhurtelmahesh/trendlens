@@ -73,6 +73,15 @@
         ]
       },
       {
+        "source": "/guide-assets/guide.js",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache"
+          }
+        ]
+      },
+      {
         "source": "/assets/**",
         "headers": [
           {

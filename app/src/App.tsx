@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { AnalysisResult, Candle, CandlesResponse, Interval, Market } from '../../shared/types';
 import { analyzeCandles, usableCandles } from './analysis/analyze';
 import { Brief } from './components/Brief';
@@ -12,6 +12,35 @@ import { TickerForm } from './components/TickerForm';
 import { ApiRequestError, fetchCandles } from './lib/api';
 import { nepseName } from './lib/nepse';
 import './styles.css';
+
+/**
+ * The last query, kept for the tab's lifetime. Following a concept link to the
+ * guide is a full page load, so returning lands on a fresh app with an empty
+ * form and the analysis gone. Storing the query — not the result — lets the
+ * same view be rebuilt on the way back; the worker edge-caches the response, so
+ * it costs one cheap request.
+ */
+const LAST_QUERY = 'trendlens:last-query';
+
+interface StoredQuery {
+  symbol: string;
+  market: Market;
+  interval: Interval;
+  refPrice?: number;
+}
+
+function readLastQuery(): StoredQuery | null {
+  try {
+    const raw = sessionStorage.getItem(LAST_QUERY);
+    if (!raw) return null;
+    const q = JSON.parse(raw) as Partial<StoredQuery>;
+    if (typeof q.symbol !== 'string' || !q.symbol || !q.market || !q.interval) return null;
+    return q as StoredQuery;
+  } catch {
+    // Private mode, blocked storage, or corrupt JSON — start clean.
+    return null;
+  }
+}
 
 interface Loaded {
   data: CandlesResponse;
@@ -53,6 +82,17 @@ export default function App() {
       const analysis = analyzeCandles(candles);
       setLoaded({ data, candles, analysis, refPrice });
       setPref(data.meta.interval);
+      try {
+        const q: StoredQuery = {
+          symbol: data.meta.symbol,
+          market: data.meta.market,
+          interval: data.meta.interval,
+          refPrice,
+        };
+        sessionStorage.setItem(LAST_QUERY, JSON.stringify(q));
+      } catch {
+        // Storage unavailable; restoring on return is a convenience, not a need.
+      }
     } catch (err) {
       if (!opts?.keepOnError) setLoaded(null);
       setError(
@@ -67,6 +107,16 @@ export default function App() {
       setPending(null);
     }
   }
+
+  // Rebuild the last view when the tab comes back from the guide. Runs once.
+  const restored = useRef(false);
+  useEffect(() => {
+    if (restored.current) return;
+    restored.current = true;
+    const q = readLastQuery();
+    if (q) load(q.symbol, q.market, q.interval, q.refPrice);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // A new search keeps whatever interval is on screen, except NEPSE, which
   // merolagani only serves daily.

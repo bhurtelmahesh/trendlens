@@ -1,4 +1,5 @@
 import type { Candle, SwingPoint } from '../../../shared/types';
+import { typicalBarMove } from './ema';
 import { fractalSwings } from './swings';
 
 /**
@@ -78,10 +79,16 @@ function rejection(
   return null;
 }
 
-/** Most recent three-bar gap that price has not traded back into. */
+/**
+ * Most recent three-bar gap price has not traded back into, ignoring gaps too
+ * small to mean anything. Bars miss each other by a fraction of a cent all the
+ * time; reporting one of those produced "a gap between 219.01 and 219.01" on a
+ * live 5-minute chart. A gap has to be a real part of a bar's travel to count.
+ */
 function unfilledGap(
   candles: Candle[],
   within: number,
+  minHeight: number,
 ): { low: number; high: number; index: number; bullish: boolean } | null {
   const from = Math.max(1, candles.length - within);
   for (let i = candles.length - 2; i >= from + 1; i--) {
@@ -92,6 +99,7 @@ function unfilledGap(
     if (!bullish && !bearish) continue;
     const low = bullish ? a.high : c.high;
     const high = bullish ? c.low : a.low;
+    if (high - low < minHeight) continue;
     // Still unfilled only if nothing since has traded back through it.
     let filled = false;
     for (let j = i + 2; j < candles.length; j++) {
@@ -246,7 +254,11 @@ export function detectSmc(candles: Candle[]): SmcFinding[] {
   }
 
   // --- Fair value gap (plate 9) ------------------------------------------
-  const gap = unfilledGap(candles, Math.min(40, n));
+  // A gap must be at least a quarter of a typical bar's travel to be worth
+  // naming, expressed in price so it scales with the instrument and interval.
+  const barMovePct = typicalBarMove(candles.map((c) => c.close));
+  const minGap = (barMovePct / 100) * lastClose * 0.25;
+  const gap = unfilledGap(candles, Math.min(40, n), minGap);
   if (gap) {
     out.push({
       tag: 'FVG',

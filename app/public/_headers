@@ -15,3 +15,6 @@
 
 /guide
   Cache-Control: no-cache
+
+/guide-assets/guide.js
+  Cache-Control: no-cache

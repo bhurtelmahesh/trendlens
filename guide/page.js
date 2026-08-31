@@ -9,7 +9,22 @@ const b64 = f => fs.readFileSync('../app/public/guide-assets/' + f).toString('ba
 // itself (plain <a download>, own <head>, local fonts, external script).
 const HOSTED = process.argv.includes('--hosted');
 const FONT_CSS = HOSTED ? fs.readFileSync('fonts/local.css', 'utf8') : '';
-const FILTER_JS = `// Family filter
+const FILTER_JS = `// Name the chart being returned to. The app stores its last query in
+// sessionStorage, which is shared with this page on the same origin and tab.
+try {
+  var lastRaw = sessionStorage.getItem('trendlens:last-query');
+  if (lastRaw) {
+    var lastQ = JSON.parse(lastRaw);
+    if (lastQ && lastQ.symbol && lastQ.interval) {
+      var fabText = document.getElementById('backfab-text');
+      if (fabText) fabText.textContent = 'Back to ' + lastQ.symbol + ' \u00b7 ' + lastQ.interval;
+    }
+  }
+} catch {
+  // Storage blocked; the default label is already correct.
+}
+
+// Family filter
 const fams = [...document.querySelectorAll('.fam')];
 for (const b of document.querySelectorAll('.filter button')) {
   b.addEventListener('click', () => {
@@ -146,6 +161,19 @@ h1{font-size:clamp(40px,7vw,68px);line-height:1.02;letter-spacing:-.02em}
 .dl-note{font-size:12.5px;color:var(--muted);margin:14px 0 0;padding-top:14px;border-top:1px solid var(--rule)}
 .dl-note button{background:none;border:0;color:var(--accent);font:inherit;text-decoration:underline;cursor:pointer;padding:0}
 
+/* ---- floating return to the app ----
+   The guide is long, and readers arrive mid-analysis from a concept link. A
+   control fixed to the viewport means the way back is always one click away
+   rather than a scroll to the footer. */
+.backfab{position:fixed;left:16px;bottom:16px;z-index:50;display:inline-flex;align-items:center;gap:8px;
+  padding:11px 16px;border-radius:999px;text-decoration:none;font:600 13px/1 var(--body);
+  background:var(--ink);color:var(--paper);border:1px solid var(--ink);
+  box-shadow:0 2px 6px rgba(0,0,0,.18),0 10px 28px rgba(0,0,0,.16)}
+.backfab:hover{opacity:.9}
+.backfab:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+@media(max-width:520px){.backfab{left:12px;bottom:12px;padding:10px 14px;font-size:12.5px}}
+@media print{.backfab{display:none}}
+
 /* ---- shared ---- */
 section{padding:64px 0;border-bottom:1px solid var(--rule)}
 .eyebrow{font:600 11px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:0 0 10px}
@@ -246,6 +274,7 @@ footer{padding:44px 0 72px;color:var(--muted);font-size:13px}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 
+${HOSTED ? '<a class="backfab" id="backfab" href="./"><span aria-hidden="true">&larr;</span> <span id="backfab-text">Back to TrendLens</span></a>' : ''}
 <div class="wrap">
   <header class="mast">
     <p class="kicker">Field guide · ICT / Smart Money Concepts</p>

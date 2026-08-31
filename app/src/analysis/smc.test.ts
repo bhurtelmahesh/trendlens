@@ -90,6 +90,23 @@ describe('detectSmc', () => {
     expect(after?.detail ?? '').not.toContain(String(Math.round(p + 9)));
   });
 
+  it('ignores a gap too small to be worth naming', () => {
+    const rows = base();
+    const p = rows.at(-1)!.close;
+    // Bars that miss each other by a fraction of a cent are not a fair value
+    // gap; reporting one rendered as "a gap between 219.01 and 219.01" live.
+    rows.push(bar(p, p + 1, p - 1, p));
+    rows.push(bar(p, p + 1.004, p, p + 1.003));
+    rows.push(bar(p + 1.003, p + 1.01, p + 1.0005, p + 1.008));
+    const f = detectSmc(stamp(rows)).find((x) => x.tag === 'FVG');
+    // Either no gap, or one big enough that its two edges are distinguishable.
+    if (f) {
+      const nums = f.detail.match(/between ([\d.,]+) and ([\d.,]+)/);
+      expect(nums).not.toBeNull();
+      expect(nums![1]).not.toBe(nums![2]);
+    }
+  });
+
   it('reports which half of the range price sits in', () => {
     const f = detectSmc(stamp(base())).find((x) => x.tag === 'PREMIUM' || x.tag === 'DISCOUNT');
     expect(f).toBeDefined();
