@@ -75,6 +75,32 @@
   </head>
   <body>
     <div id="root"></div>
+    <!--
+      The app is client-rendered, so the raw HTML carries no copy. Googlebot
+      renders JS and sees the real page, but crawlers that do not render get an
+      empty body — this says the same thing the app says, for those.
+    -->
+    <noscript>
+      <h1>TrendLens</h1>
+      <p>See the structure of a price series &mdash; measured, not guessed.</p>
+      <h2>What this is</h2>
+      <p>
+        A mechanical read of a price series: the slope of an exponential moving
+        average, the sequence of swing highs and lows, and whether the latest
+        close has broken the most recent swing. Readable at 1m, 5m, 1h, 1d and
+        1wk intervals, for US, global, crypto and NEPSE symbols.
+      </p>
+      <h2>What this isn&rsquo;t</h2>
+      <p>
+        Not advice, not a prediction, not a signal. Market data can be delayed,
+        adjusted, or wrong. Decide for yourself.
+      </p>
+      <p>
+        TrendLens needs JavaScript to read a chart.
+        <a href="/guide">The Smart Money Concepts field guide</a> is plain HTML
+        and explains the terms it uses.
+      </p>
+    </noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
