@@ -48,6 +48,15 @@
       duplicates, so every copy points at the one primary URL.
     -->
     <link rel="canonical" href="https://trendlens.web.app/" />
+    <!--
+      Search Console ownership. Uses the meta-tag method, not the HTML file:
+      firebase.json sets cleanUrls, which 301s /google<token>.html to the
+      extensionless path, and the verifier would be redirected away.
+    -->
+    <meta
+      name="google-site-verification"
+      content="dg6YVBmGolXuU_SUnhSHwQOul_ssSOEtyW0oQn4RpAQ"
+    />
     <meta name="robots" content="index, follow, max-image-preview:large" />
     <title>TrendLens — read the trend structure of any ticker</title>
     <script type="application/ld+json">
