@@ -7,6 +7,7 @@ import { HonestyPanel } from './components/HonestyPanel';
 import { IntervalTabs } from './components/IntervalTabs';
 import { Legal } from './components/Legal';
 import { PriceChart } from './components/PriceChart';
+import { SmcNotes } from './components/SmcNotes';
 import { TickerForm } from './components/TickerForm';
 import { ApiRequestError, fetchCandles } from './lib/api';
 import { nepseName } from './lib/nepse';
@@ -113,6 +114,7 @@ export default function App() {
             analysis={loaded.analysis}
             refPrice={loaded.refPrice}
           />
+          <SmcNotes candles={loaded.candles} guideHref={`${import.meta.env.BASE_URL}guide.html`} />
           <EntryZones analysis={loaded.analysis} />
         </main>
       ) : null}
