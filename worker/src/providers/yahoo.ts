@@ -1,6 +1,14 @@
 import type { Candle, CandlesResponse, Interval, Market } from '../../../shared/types';
 
-const RANGE: Record<Interval, string> = { '1h': '3mo', '1d': '2y', '1wk': '10y' };
+// Yahoo caps intraday history: 1m is refused beyond 8 days and 5m beyond a
+// month (HTTP 422). These ranges sit inside those limits deliberately.
+const RANGE: Record<Interval, string> = {
+  '1m': '7d',
+  '5m': '1mo',
+  '1h': '3mo',
+  '1d': '2y',
+  '1wk': '10y',
+};
 const MAX_BARS = 320;
 const MIN_BARS = 30;
 const FETCH_TIMEOUT_MS = 12_000;

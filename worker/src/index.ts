@@ -39,9 +39,21 @@ function fallbackAllowed(key: string, limit = 60, windowMs = 60_000): boolean {
   return recent.length <= limit;
 }
 
-// Candle history barely changes intraday, so cache it hard. A day-old "backup"
-// copy is kept separately and served if the live feed is rate-limited.
-const CANDLES_TTL: Record<Interval, number> = { '1h': 120, '1d': 900, '1wk': 3600 };
+// Cache TTLs track how fast a bar can change: a 1m chart goes stale in seconds,
+// a weekly one does not. A day-old "backup" copy is kept separately and served
+// if the live feed is rate-limited.
+const CANDLES_TTL: Record<Interval, number> = {
+  '1m': 30,
+  '5m': 60,
+  '1h': 120,
+  '1d': 900,
+  '1wk': 3600,
+};
+
+// A day-old copy is a reasonable fallback for a daily chart and nonsense for a
+// one-minute one, so intraday intervals get no backup rather than a stale one
+// presented as current.
+const NO_BACKUP: ReadonlySet<Interval> = new Set<Interval>(['1m', '5m']);
 const SEARCH_TTL = 3600;
 const BACKUP_TTL = 86_400;
 
@@ -129,17 +141,21 @@ export default {
       const res = ok(data, CANDLES_TTL[data.meta.interval]);
       if (cache) {
         ctx.waitUntil(cache.put(keyFor(), res.clone()));
-        ctx.waitUntil(
-          cache.put(
-            keyFor('&_b=1'),
-            jsonResponse(data, 200, `public, max-age=${BACKUP_TTL}`),
-          ),
-        );
+        if (!NO_BACKUP.has(data.meta.interval)) {
+          ctx.waitUntil(
+            cache.put(
+              keyFor('&_b=1'),
+              jsonResponse(data, 200, `public, max-age=${BACKUP_TTL}`),
+            ),
+          );
+        }
       }
       return withCors(res, origin);
     } catch (err) {
-      // Live feed failed (usually a Yahoo 429). Serve the day-old backup if we have one.
-      if (cache) {
+      // Live feed failed (usually a Yahoo 429). Serve the day-old backup if we
+      // have one — but never for an intraday interval, where day-old bars would
+      // be presented as the current chart.
+      if (cache && !NO_BACKUP.has(parsed.interval)) {
         const backup = await cache.match(keyFor('&_b=1'));
         if (backup) {
           const body = (await backup.json()) as CandlesResponse;

@@ -16,7 +16,7 @@ describe('parseCandlesQuery', () => {
     for (const m of ['us', 'crypto', 'global', 'nepse']) {
       expect(q(`symbol=X&market=${m}`)).toMatchObject({ market: m });
     }
-    for (const i of ['1h', '1d', '1wk']) {
+    for (const i of ['1m', '5m', '1h', '1d', '1wk']) {
       expect(q(`symbol=X&interval=${i}`)).toMatchObject({ interval: i });
     }
   });
@@ -50,6 +50,10 @@ describe('parseCandlesQuery', () => {
     expect(typeof q('symbol=AAPL&market=moon')).toBe('string');
     expect(typeof q('symbol=AAPL&interval=2h')).toBe('string');
     expect(typeof q('symbol=AAPL&interval=1D')).toBe('string');
+    // Yahoo has no sub-minute data; these must never reach the provider.
+    expect(typeof q('symbol=AAPL&interval=1s')).toBe('string');
+    expect(typeof q('symbol=AAPL&interval=30s')).toBe('string');
+    expect(typeof q('symbol=AAPL&interval=15m')).toBe('string');
   });
 
   it('is case-insensitive on market but not on interval', () => {

@@ -1,4 +1,4 @@
-import type { AnalysisResult, Candle } from '../../../shared/types';
+import type { AnalysisResult, Candle, Interval } from '../../../shared/types';
 
 export type ReferenceTone = 'aligned' | 'neutral' | 'against';
 
@@ -105,10 +105,13 @@ export function describeReference(r: AnalysisResult, refPrice: number): Referenc
 }
 
 /** Turn the numeric result into plain, non-advice language. */
-export function toBrief(r: AnalysisResult, refPrice?: number): Brief {
+export function toBrief(r: AnalysisResult, refPrice?: number, interval?: Interval): Brief {
   const hi = money(r.lastSwingHigh.price);
   const lo = money(r.lastSwingLow.price);
-  const slope = `${r.emaSlopePctPerBar >= 0 ? '+' : ''}${r.emaSlopePctPerBar.toFixed(3)}% per bar`;
+  // "% per bar" means something very different on a 1m chart than a weekly one,
+  // so name the bar whenever the caller knows which interval is on screen.
+  const unit = interval ? `per ${interval} bar` : 'per bar';
+  const slope = `${r.emaSlopePctPerBar >= 0 ? '+' : ''}${r.emaSlopePctPerBar.toFixed(3)}% ${unit}`;
 
   const headline =
     r.direction === 'up'

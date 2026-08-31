@@ -9,7 +9,7 @@ interface Props {
 }
 
 export function Brief({ meta, candles, analysis, refPrice }: Props) {
-  const brief = toBrief(analysis, refPrice);
+  const brief = toBrief(analysis, refPrice, meta.interval);
   // Same predicate the chart uses, so the text never cites a line that isn't drawn.
   const refDrawn = refPrice !== undefined && refOnChart(refPrice, candles);
   const dirClass = `dir dir-${analysis.direction}`;

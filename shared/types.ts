@@ -11,7 +11,7 @@ export interface Candle {
 }
 
 export type Market = 'us' | 'crypto' | 'global' | 'nepse';
-export type Interval = '1h' | '1d' | '1wk';
+export type Interval = '1m' | '5m' | '1h' | '1d' | '1wk';
 
 export interface CandlesRequest {
   symbol: string;
