@@ -2,6 +2,20 @@ import { describe, expect, it } from 'vitest';
 import type { Candle } from '../../../shared/types';
 import { analyzeCandles } from './analyze';
 
+/**
+ * Deterministic bar-to-bar noise. Real series have a noise floor, and the
+ * analysis measures drift against it — a perfectly smooth function has none, so
+ * its "typical bar move" is just the drift and the ratio is ~1 whatever the
+ * slope. These fixtures add noise so they exercise the same path real data does.
+ */
+function noise(seed: number) {
+  let x = seed;
+  return () => {
+    x = (x * 1103515245 + 12345) & 0x7fffffff;
+    return x / 0x7fffffff - 0.5;
+  };
+}
+
 /** Build candles from a close-price function, with small wick padding. */
 function series(fn: (i: number) => number, n = 160): Candle[] {
   const out: Candle[] = [];
@@ -25,23 +39,57 @@ function series(fn: (i: number) => number, n = 160): Candle[] {
 
 describe('analyzeCandles', () => {
   it('calls a steady uptrend "up" with a positive EMA slope', () => {
-    const r = analyzeCandles(series((i) => 100 + i * 0.9 + Math.sin(i / 7) * 2));
+    const n = noise(7);
+    const r = analyzeCandles(series((i) => 100 + i * 0.9 + Math.sin(i / 7) * 2 + n() * 3));
     expect(r.direction).toBe('up');
     expect(r.emaSlopePctPerBar).toBeGreaterThan(0);
     expect(r.confidence).toBeGreaterThan(30);
   });
 
   it('calls a steady downtrend "down" with a negative EMA slope', () => {
-    const r = analyzeCandles(series((i) => 300 - i * 0.9 + Math.sin(i / 6) * 2));
+    const n = noise(11);
+    const r = analyzeCandles(series((i) => 300 - i * 0.9 + Math.sin(i / 6) * 2 + n() * 3));
     expect(r.direction).toBe('down');
     expect(r.emaSlopePctPerBar).toBeLessThan(0);
   });
 
   it('calls a flat oscillation "range" and never High', () => {
-    const r = analyzeCandles(series((i) => 200 + Math.sin(i / 8) * 5));
+    const n = noise(23);
+    const r = analyzeCandles(series((i) => 200 + Math.sin(i / 8) * 5 + n() * 3));
     expect(r.direction).toBe('range');
     expect(r.band).not.toBe('High');
     expect(r.confidence).toBeLessThanOrEqual(65);
+  });
+
+  // The point of measuring drift in typical-bar-moves: the same shape must read
+  // the same whether its bars are minutes or weeks. With a raw %/bar threshold
+  // it did not — measured across seven symbols the median EMA slope ran
+  // 0.0023%/bar at 1m against 0.674%/bar at 1wk, so a fixed cutoff either never
+  // fired at 1m or always fired at 1wk.
+  it('reaches the same verdict when the same shape is scaled per bar', () => {
+    const shape = (i: number, scale: number) => {
+      const n = noise(31 + Math.round(scale * 1000));
+      return 100 + i * 0.9 * scale + Math.sin(i / 7) * 2 * scale + n() * 3 * scale;
+    };
+    // A minute bar moves a fraction of what a weekly bar moves; same geometry.
+    const fine = analyzeCandles(series((i) => shape(i, 0.02)));
+    const coarse = analyzeCandles(series((i) => shape(i, 1)));
+    expect(fine.direction).toBe(coarse.direction);
+    expect(fine.structure).toBe(coarse.structure);
+    // Raw %/bar differs by roughly the scale factor...
+    expect(Math.abs(coarse.emaSlopePctPerBar)).toBeGreaterThan(
+      Math.abs(fine.emaSlopePctPerBar) * 5,
+    );
+    // ...while the normalised figure stays comparable.
+    expect(Math.abs(fine.slopeInBars - coarse.slopeInBars)).toBeLessThan(0.25);
+  });
+
+  it('treats a flat series as flat rather than dividing by zero', () => {
+    const r = analyzeCandles(series(() => 150));
+    expect(r.typicalBarMove).toBe(0);
+    expect(r.slopeInBars).toBe(0);
+    expect(r.direction).toBe('range');
+    expect(Number.isFinite(r.confidence)).toBe(true);
   });
 
   it('calls a choppy, directionless series "range"', () => {

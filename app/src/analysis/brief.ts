@@ -22,10 +22,25 @@ function money(n: number): string {
   return n.toLocaleString(undefined, { maximumFractionDigits: 6 });
 }
 
-function moveSize(absPct: number): string {
-  if (absPct < 3) return 'a small move';
-  if (absPct < 10) return 'a moderate move';
-  if (absPct < 25) return 'a large move';
+/**
+ * How big a move is, judged against the range this chart actually shows rather
+ * than a fixed percentage. 3% is a rounding error on a six-year weekly chart and
+ * an enormous jump across five hours of one-minute bars, so a fixed cutoff
+ * describes one timeframe and misleads on every other. `rangePct` is the swing
+ * high-to-low span as a share of price; if there is no range to compare against,
+ * fall back to absolute percentages.
+ */
+function moveSize(absPct: number, rangePct: number): string {
+  if (!(rangePct > 0)) {
+    if (absPct < 3) return 'a small move';
+    if (absPct < 10) return 'a moderate move';
+    if (absPct < 25) return 'a large move';
+    return 'a very large move';
+  }
+  const inRanges = absPct / rangePct;
+  if (inRanges < 0.5) return 'a small move';
+  if (inRanges < 1.5) return 'a moderate move';
+  if (inRanges < 4) return 'a large move';
   return 'a very large move';
 }
 
@@ -62,6 +77,11 @@ export function describeReference(r: AnalysisResult, refPrice: number): Referenc
   if (!Number.isFinite(refPrice) || refPrice <= 0) return undefined;
 
   const gap = ((refPrice - r.lastClose) / r.lastClose) * 100;
+  // The visible swing range, as a share of price — the yardstick for "big".
+  const rangePct =
+    r.lastClose > 0
+      ? (Math.abs(r.lastSwingHigh.price - r.lastSwingLow.price) / r.lastClose) * 100
+      : 0;
   const p = money(refPrice);
   const hi = money(r.lastSwingHigh.price);
   const lo = money(r.lastSwingLow.price);
@@ -81,7 +101,7 @@ export function describeReference(r: AnalysisResult, refPrice: number): Referenc
   }
 
   const dirNeeded: 'up' | 'down' = gap > 0 ? 'up' : 'down';
-  const size = moveSize(Math.abs(gap));
+  const size = moveSize(Math.abs(gap), rangePct);
   const gapStr = `${gap > 0 ? '+' : ''}${gap.toFixed(1)}%`;
   const trend = r.direction === 'up' ? 'up-trend' : 'down-trend';
 
@@ -112,6 +132,11 @@ export function toBrief(r: AnalysisResult, refPrice?: number, interval?: Interva
   // so name the bar whenever the caller knows which interval is on screen.
   const unit = interval ? `per ${interval} bar` : 'per bar';
   const slope = `${r.emaSlopePctPerBar >= 0 ? '+' : ''}${r.emaSlopePctPerBar.toFixed(3)}% ${unit}`;
+  // The raw figure alone says nothing across timeframes; the multiple does.
+  const slopeScaled =
+    r.typicalBarMove > 0
+      ? `${slope} — about ${Math.abs(r.slopeInBars).toFixed(2)}\u00d7 a typical ${interval ?? ''} bar's move`.replace('  ', ' ')
+      : slope;
 
   const headline =
     r.direction === 'up'
@@ -136,7 +161,7 @@ export function toBrief(r: AnalysisResult, refPrice?: number, interval?: Interva
 
   const observations = [
     `Swing structure: ${STRUCTURE_PHRASE[r.structure]}.`,
-    `${r.emaPeriod}-bar EMA slope: ${slope}.`,
+    `${r.emaPeriod}-bar EMA slope: ${slopeScaled}.`,
     r.breakOfStructure === 'none'
       ? `The last close sits between the recent swing low (${lo}) and swing high (${hi}) — no break of structure.`
       : `The last close has broken the recent swing ${r.breakOfStructure === 'bullish' ? `high (${hi})` : `low (${lo})`} — a ${r.breakOfStructure} break of structure.`,

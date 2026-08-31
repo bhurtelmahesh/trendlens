@@ -7,6 +7,8 @@ const up: AnalysisResult = {
   confidence: 60,
   band: 'Moderate',
   emaSlopePctPerBar: 0.4,
+  typicalBarMove: 1.0,
+  slopeInBars: 0.4,
   emaPeriod: 20,
   structure: 'higher-highs-higher-lows',
   breakOfStructure: 'none',
@@ -47,6 +49,22 @@ describe('describeReference', () => {
     expect(describeReference(up, 110.1)!.text).toMatch(/about where price is now/);
   });
 });
+
+  it('sizes a move against the range on screen, not a fixed percentage', () => {
+    // Range is 100..120 on a 110 close — an 18.2% span.
+    const near = describeReference(up, 118); // +7.3% => 0.4x the range
+    const far = describeReference(up, 200); // +81.8% => 4.5x the range
+    expect(near?.text).toContain('a small move');
+    expect(far?.text).toContain('a very large move');
+
+    // The same +7.3% on a chart whose whole visible span is 2% is not small.
+    const tight: AnalysisResult = {
+      ...up,
+      lastSwingHigh: { index: 100, price: 111 },
+      lastSwingLow: { index: 80, price: 109 },
+    };
+    expect(describeReference(tight, 118)?.text).toContain('a very large move');
+  });
 
 describe('toBrief', () => {
   it('omits the reference when no price is given', () => {

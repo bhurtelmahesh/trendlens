@@ -1,15 +1,29 @@
 import type { AnalysisResult, Band, Candle, Direction } from '../../../shared/types';
-import { ema, emaPeriodFor, emaSlopePctPerBar } from './ema';
+import { ema, emaPeriodFor, emaSlopePctPerBar, typicalBarMove } from './ema';
 import { rSquared } from './rsquared';
 import { classifyStructure, breakOfStructure } from './structure';
 import { fractalSwings, lastSwings } from './swings';
 
-/** %/bar within this band counts as "flat". */
-const FLAT_SLOPE = 0.12;
-/** %/bar considered a decisively steep move. */
-const STEEP_SLOPE = 0.25;
-/** %/bar that maps to a full-strength slope score. */
-const SLOPE_FULL_SCALE = 0.6;
+// Slope thresholds are measured in "typical bar moves", not in raw %/bar.
+// A fixed %/bar constant is meaningless across intervals: measured over seven
+// liquid symbols the median EMA slope runs 0.0023%/bar at 1m and 0.674%/bar at
+// 1wk — a 290x spread — so any constant either never fires at 1m or always
+// fires at 1wk. Divided by each instrument's own median bar move the same
+// figures collapse into 0.07-0.39, which is comparable. These values are the
+// previous daily-tuned constants converted at the measured daily bar move
+// (1.28%), so daily verdicts are essentially unchanged.
+/** Drift below this share of a typical bar counts as "flat". */
+const FLAT_SLOPE = 0.09;
+/**
+ * Drift above this share of a typical bar is decisively steep — enough for the
+ * slope alone to carry the verdict when the swing structure is mixed. Measured
+ * separation: noisy synthetic trends sit at 0.64 and 0.99, a noisy oscillation
+ * at 0.18, and real daily symbols run 0.07-1.24 with a 0.39 median. Half a
+ * typical bar of drift per bar splits those cleanly.
+ */
+const STEEP_SLOPE = 0.5;
+/** Drift that maps to a full-strength slope score. */
+const SLOPE_FULL_SCALE = 0.47;
 /** "No clean trend" is never a high-conviction call. */
 const RANGE_CONFIDENCE_CAP = 65;
 
@@ -57,7 +71,11 @@ export function analyzeCandles(input: Candle[]): AnalysisResult {
 
   const emaPeriod = emaPeriodFor(n);
   const emaSeries = ema(closes, emaPeriod);
-  const slope = emaSlopePctPerBar(emaSeries, emaPeriod);
+  const slopePct = emaSlopePctPerBar(emaSeries, emaPeriod);
+  // Express the slope on the instrument's own scale. A flat series has no
+  // scale to divide by, and is flat by definition.
+  const barMove = typicalBarMove(closes);
+  const slope = barMove > 0 ? slopePct / barMove : 0;
 
   const { highs, lows } = fractalSwings(candles);
   const structure = classifyStructure(highs, lows);
@@ -103,7 +121,9 @@ export function analyzeCandles(input: Candle[]): AnalysisResult {
     direction,
     confidence,
     band: confidenceBand(confidence),
-    emaSlopePctPerBar: slope,
+    emaSlopePctPerBar: slopePct,
+    typicalBarMove: barMove,
+    slopeInBars: slope,
     emaPeriod,
     structure,
     breakOfStructure: bos,

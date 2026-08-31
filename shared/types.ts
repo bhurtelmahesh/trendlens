@@ -73,6 +73,10 @@ export interface AnalysisResult {
   band: Band;
   /** Percent change in the EMA per bar, over the lookback window. */
   emaSlopePctPerBar: number;
+  /** Median absolute close-to-close move, in %. The bar's own scale. */
+  typicalBarMove: number;
+  /** EMA slope expressed in typical-bar-moves. Comparable across intervals. */
+  slopeInBars: number;
   emaPeriod: number;
   structure: Structure;
   breakOfStructure: BreakOfStructure;
