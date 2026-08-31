@@ -3,6 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="theme-color" content="#0c0f13" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       http-equiv="Content-Security-Policy"
@@ -19,13 +21,57 @@
       property="og:description"
       content="See the structure of a price series — measured, not guessed. EMA slope, swing highs and lows, and break of structure, stated plainly. Not advice."
     />
-    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="TrendLens" />
     <meta
       name="twitter:description"
       content="See the structure of a price series — measured, not guessed. Not advice."
     />
-    <title>TrendLens</title>
+    <meta name="twitter:image" content="https://trendlens.web.app/og.png" />
+    <meta
+      name="twitter:image:alt"
+      content="TrendLens — a candlestick series with its EMA, over the wordmark."
+    />
+    <meta property="og:url" content="https://trendlens.web.app/" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:image" content="https://trendlens.web.app/og.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="TrendLens — a candlestick series with its EMA, over the wordmark."
+    />
+    <!--
+      Four hosts serve this same build (Firebase, its firebaseapp.com alias,
+      Cloudflare Pages and GitHub Pages). Without a canonical they compete as
+      duplicates, so every copy points at the one primary URL.
+    -->
+    <link rel="canonical" href="https://trendlens.web.app/" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <title>TrendLens — read the trend structure of any ticker</title>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "TrendLens",
+        "url": "https://trendlens.web.app/",
+        "applicationCategory": "FinanceApplication",
+        "operatingSystem": "Any",
+        "browserRequirements": "Requires JavaScript.",
+        "isAccessibleForFree": true,
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+        "description": "TrendLens reads the trend structure of a price series — EMA slope, swing highs and lows, break of structure — across 1m, 5m, 1h, 1d and 1wk candles, and states the read plainly. Informational only; not financial advice.",
+        "featureList": [
+          "EMA slope and swing-structure read",
+          "Break of structure and change of character detection",
+          "Long and short entry zones with invalidation levels",
+          "1m, 5m, 1h, 1d and 1wk intervals",
+          "US, global, crypto and NEPSE symbols"
+        ],
+        "disambiguatingDescription": "A mechanical chart read. Not financial, investment or trading advice."
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

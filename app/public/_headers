@@ -18,3 +18,9 @@
 
 /guide-assets/guide.js
   Cache-Control: no-cache
+
+# Content-hashed filenames never change contents, so they can be cached hard.
+# firebase.json already grants this; without it Cloudflare Pages revalidates
+# every asset on every load.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable

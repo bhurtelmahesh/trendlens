@@ -1,0 +1,7 @@
+# TrendLens. Every host serves the same build and canonicalises to
+# https://trendlens.web.app/, so mirrors are crawlable rather than blocked —
+# blocking them would hide the canonical tag that consolidates them.
+User-agent: *
+Allow: /
+
+Sitemap: https://trendlens.web.app/sitemap.xml
