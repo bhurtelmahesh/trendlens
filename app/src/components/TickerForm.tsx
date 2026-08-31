@@ -7,6 +7,12 @@ interface Props {
   busy: boolean;
   /** Interval is chosen on the chart after loading, not here. */
   onSubmit: (symbol: string, market: Market, refPrice?: number) => void;
+  /**
+   * Inputs to start from, when a previous query is being restored. Without
+   * these the restored chart appears above an empty form with the submit button
+   * disabled, which leaves no way to tell what produced the result.
+   */
+  initial?: { symbol: string; market: Market; refPrice?: number };
 }
 
 const EXAMPLES: Record<Market, string> = {
@@ -16,16 +22,20 @@ const EXAMPLES: Record<Market, string> = {
   nepse: 'NABIL, UPPER, NRIC',
 };
 
-export function TickerForm({ busy, onSubmit }: Props) {
+export function TickerForm({ busy, onSubmit, initial }: Props) {
   const listId = useId();
-  const [symbol, setSymbol] = useState('');
-  const [market, setMarket] = useState<Market>('us');
-  const [refPrice, setRefPrice] = useState('');
+  const [symbol, setSymbol] = useState(initial?.symbol ?? '');
+  const [market, setMarket] = useState<Market>(initial?.market ?? 'us');
+  const [refPrice, setRefPrice] = useState(
+    initial?.refPrice !== undefined ? String(initial.refPrice) : '',
+  );
 
   const [results, setResults] = useState<SearchResult[]>([]);
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(-1);
-  const justPicked = useRef(false);
+  // Seeded inputs must not open the suggestion list on mount — the reader did
+  // not type anything, and a dropdown over a restored chart is noise.
+  const justPicked = useRef(initial?.symbol !== undefined && initial.symbol !== '');
   const nepse = market === 'nepse';
 
   // Symbol search. NEPSE uses a bundled local list; everything else hits the
@@ -188,10 +198,15 @@ export function TickerForm({ busy, onSubmit }: Props) {
         />
       </label>
 
-      <button type="submit" disabled={busy || !symbol.trim()}>
+      <button
+        type="submit"
+        disabled={busy || !symbol.trim()}
+        aria-describedby={symbol.trim() ? undefined : `${listId}-why`}
+      >
         {busy ? 'Reading…' : 'Read the structure'}
       </button>
-      <p className="hint">
+      <p className="hint" id={`${listId}-why`}>
+        {!symbol.trim() ? 'Enter or pick a ticker to continue. ' : ''}
         {nepse
           ? 'NEPSE support is experimental — unofficial daily data via merolagani. '
           : 'Start typing to search, or enter the exact symbol. Interval is set on the chart. '}

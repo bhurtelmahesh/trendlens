@@ -58,6 +58,11 @@ export default function App() {
   const [pref, setPref] = useState<Interval>('1d');
   /** The interval being fetched right now, for the tab's loading state. */
   const [pending, setPending] = useState<Interval | null>(null);
+  /** Inputs to seed the form with when restoring; read once, before first paint. */
+  const [initialInputs] = useState(() => {
+    const q = readLastQuery();
+    return q ? { symbol: q.symbol, market: q.market, refPrice: q.refPrice } : undefined;
+  });
 
   async function load(
     symbol: string,
@@ -136,38 +141,41 @@ export default function App() {
         <p>See the structure of a price series &mdash; measured, not guessed.</p>
       </header>
 
-      <TickerForm busy={busy} onSubmit={search} />
+      <main className="app-main">
+        <h2 className="sr-only">Analyse a price series</h2>
+        <TickerForm busy={busy} onSubmit={search} initial={initialInputs} />
 
-      {error ? (
-        <p className="error" role="alert">
-          {error}
-        </p>
-      ) : null}
+        {error ? (
+          <p className="error" role="alert">
+            {error}
+          </p>
+        ) : null}
 
-      {loaded ? (
-        <main className="result">
-          <IntervalTabs
+        {loaded ? (
+          <section className="result" aria-label="Analysis">
+            <IntervalTabs
             current={loaded.data.meta.interval}
             market={loaded.data.meta.market}
             pending={pending}
             busy={busy}
             onPick={switchInterval}
           />
-          <PriceChart
+            <PriceChart
             candles={loaded.candles}
             analysis={loaded.analysis}
             refPrice={loaded.refPrice}
           />
-          <Brief
+            <Brief
             meta={loaded.data.meta}
             candles={loaded.candles}
             analysis={loaded.analysis}
             refPrice={loaded.refPrice}
           />
-          <SmcNotes candles={loaded.candles} guideHref={`${import.meta.env.BASE_URL}guide.html`} />
-          <EntryZones analysis={loaded.analysis} />
-        </main>
-      ) : null}
+            <SmcNotes candles={loaded.candles} guideHref={`${import.meta.env.BASE_URL}guide.html`} />
+            <EntryZones analysis={loaded.analysis} />
+          </section>
+        ) : null}
+      </main>
 
       <HonestyPanel />
       <Legal />
